@@ -1,16 +1,17 @@
-<program> ::=	(<variable declaration part> | <procedure declaration part> | <block>)* '.'
-<variable declaration part> ::= 'var' <variable declaration>* ';'
-<variable declaration> ::= 	<identifier> ( ',' <identifier> )* ':' <type>
+<program> =>						(<variable_declaration_part> | <procedure_declaration_part> | <block>)* '.'
+<variable_declaration_part> =>		'var' <variable declaration>* ';'
+<variable_declaration> => 			<identifier> ( ',' <identifier> )* ':' <type>
 
+<block> =>							'begin' (	<if_statement> | <while_statement> | <for_statement> | 
+												<break> | <continue> | <return> | <expression> 		)* 'end'
 
-
-
-
-
-
-<for statement> ::= 'for' <expression> 'to' <expression> 'do' <block> ';'
+<for_statement> => 					'for' <expression> 'to' <expression> 'do' <block> ';'
+<if_statement> =>					'if'  <logic_expression> 'then' <block> ( 'else' <block> ';')?
 				
+<logic_expression> 					<compare> ( ( '&&' | '||' ) <compare> )?
+<compare> =>						<expression> ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) <expression>			
+<expression> => 					<term> ( ( '+' | '-' ) <term> )*
+<term> => 							<fact> ( ( '*' | '/' | '%' ) <fact> )*
+<fact> => 							( '-' )? ( CONST | ID | ARRAY_ELEM | FUNC_CALL | '(' <expression> ')' )
 
-<expression> -> <term> ( ( '+' | '-' ) <term> )*
-<term> -> <fact> ( ( '*' | '/' | '%' ) <fact> )*
-<fact> -> ( '-' )? ( CONST | ID | ARRAY_ELEM | FUNC_CALL | '(' <expression> ')' )
+<type> => 							'integer' | 'char' | 'string'

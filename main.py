@@ -48,6 +48,7 @@ class Class(Enum):
     END = auto()
     VAR = auto()
     PROCEDURE = auto()
+    FUNCTION = auto()
     TO = auto()
     DO = auto()
     THEN = auto()
@@ -133,6 +134,8 @@ class Lexer:
             return Token(Class.ARRAY, lexeme)
         elif lexeme == 'procedure':
             return Token(Class.PROCEDURE, lexeme)
+        elif lexeme == 'function':
+            return Token(Class.FUNCTION, lexeme)
         elif lexeme == 'to':
             return Token(Class.TO, lexeme)
         elif lexeme == 'do':
@@ -515,18 +518,14 @@ class Parser:
 
     def if_(self):
         self.eat(Class.IF)
-        self.eat(Class.LPAREN)
         cond = self.logic()
-        self.eat(Class.RPAREN)
-        self.eat(Class.LBRACE)
+        self.eat(Class.THEN)
         true = self.block()
-        self.eat(Class.RBRACE)
         false = None
         if self.curr.class_ == Class.ELSE:
             self.eat(Class.ELSE)
-            self.eat(Class.LBRACE)
             false = self.block()
-            self.eat(Class.RBRACE)
+            self.eat(Class.SEMICOLON)
         return If(cond, true, false)
 
     def while_(self):
@@ -781,7 +780,7 @@ class Parser:
         self.die("Expected: {}, Found: {}".format(expected, found))
 
 
-test_id = 4
+test_id = 9
 path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
