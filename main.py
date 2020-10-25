@@ -310,12 +310,10 @@ class While(Node):
 
 
 class For(Node):
-    def __init__(self, init, cond, step, block):
-        self.init = init
-        self.cond = cond
-        self.step = step
+    def __init__(self, start, end, block):
+        self.start = start
+        self.end = end
         self.block = block
-
 
 class FuncImpl(Node):
     def __init__(self, type_, id_, params, block):
@@ -430,9 +428,7 @@ class Parser:
         nodes = []
         while self.curr.class_ != Class.DOT:
             if self.curr.class_ == Class.BEGIN:
-                self.eat(Class.BEGIN)
                 nodes.append(self.block())
-                self.eat(Class.END)
             elif self.curr.class_ == Class.VAR:
                 nodes.append(self.variable_declaration_part())
             elif self.curr.class_ == Class.PROCEDURE:
@@ -446,6 +442,7 @@ class Parser:
         data_type_id = []
         while self.curr.class_ == Class.ID:
             data_type_id.extend(self.variable_declaration())
+            self.eat(Class.SEMICOLON)
         return Variables(data_type_id)
 
     def variable_declaration(self):
@@ -461,7 +458,6 @@ class Parser:
         for id_ in ids:
             data_type_id.append(Decl(data_type, id_))
         self.eat(Class.TYPE)
-        self.eat(Class.SEMICOLON)
         return data_type_id
 
     def procedure_declaration_part(self):
@@ -545,19 +541,16 @@ class Parser:
 
     def for_(self):
         self.eat(Class.FOR)
-        self.eat(Class.LPAREN)
-        init = self.id_()
-        self.eat(Class.SEMICOLON)
-        cond = self.logic()
-        self.eat(Class.SEMICOLON)
-        step = self.id_()
-        self.eat(Class.RPAREN)
-        self.eat(Class.LBRACE)
+        start = self.expr()
+        self.eat(Class.TO)
+        end = self.expr()
+        self.eat(Class.DO)
         block = self.block()
-        self.eat(Class.RBRACE)
-        return For(init, cond, step, block)
+        self.eat(Class.SEMICOLON)
+        return For(start, end, block)
 
     def block(self):
+        self.eat(Class.BEGIN)
         nodes = []
         while self.curr.class_ != Class.END:
             if self.curr.class_ == Class.IF:
@@ -579,6 +572,7 @@ class Parser:
                 self.eat(Class.SEMICOLON)
             else:
                 self.die_deriv(self.block.__name__)
+        self.eat(Class.END)
         return Block(nodes)
 
     def params(self):
@@ -787,7 +781,7 @@ class Parser:
         self.die("Expected: {}, Found: {}".format(expected, found))
 
 
-test_id = 2
+test_id = 4
 path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
