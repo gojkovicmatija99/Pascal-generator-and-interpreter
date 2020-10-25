@@ -55,9 +55,7 @@ class Class(Enum):
 
     BREAK = auto()
     CONTINUE = auto()
-    RETURN = auto()
-
-    ADDRESS = auto()
+    EXIT = auto()
 
     ID = auto()
     EOF = auto()
@@ -122,8 +120,8 @@ class Lexer:
             return Token(Class.BREAK, lexeme)
         elif lexeme == 'continue':
             return Token(Class.CONTINUE, lexeme)
-        elif lexeme == 'return':
-            return Token(Class.RETURN, lexeme)
+        elif lexeme == 'exit':
+            return Token(Class.EXIT, lexeme)
         elif lexeme == 'var':
             return Token(Class.VAR, lexeme)
         elif lexeme == 'begin':
@@ -188,8 +186,7 @@ class Lexer:
             if curr == '&':
                 token = Token(Class.AND, '&&')
             else:
-                token = Token(Class.ADDRESS, '&')
-                self.pos -= 1
+                self.die(curr)
         elif curr == '|':
             curr = self.next_char()
             if curr == '|':
@@ -318,11 +315,12 @@ class For(Node):
         self.end = end
         self.block = block
 
-class FuncImpl(Node):
-    def __init__(self, type_, id_, params, block):
-        self.type_ = type_
+
+class Procedure(Node):
+    def __init__(self, id_, params, variables, block):
         self.id_ = id_
         self.params = params
+        self.variables = variables
         self.block = block
 
 
@@ -335,12 +333,6 @@ class FuncCall(Node):
 class Block(Node):
     def __init__(self, nodes):
         self.nodes = nodes
-
-
-class Params(Node):
-    def __init__(self, params):
-        self.params = params
-
 
 class Args(Node):
     def __init__(self, args):
@@ -360,9 +352,8 @@ class Continue(Node):
     pass
 
 
-class Return(Node):
-    def __init__(self, expr):
-        self.expr = expr
+class Exit(Node):
+    pass
 
 
 class Type(Node):
@@ -464,7 +455,22 @@ class Parser:
         return data_type_id
 
     def procedure_declaration_part(self):
-        pass
+        self.eat(Class.PROCEDURE)
+        id_ = self.id_()
+        self.eat(Class.LPAREN)
+        params = []
+        while self.curr.class_ == Class.ID:
+            params.extend(self.variable_declaration())
+            if self.curr.class_ == Class.SEMICOLON:
+                self.eat(Class.SEMICOLON)
+        self.eat(Class.RPAREN)
+        self.eat(Class.SEMICOLON)
+        vars = None
+        if self.curr.class_ == Class.VAR:
+            vars = self.variable_declaration_part()
+        block = self.block()
+        self.eat(Class.SEMICOLON)
+        return Procedure(id_, params, vars, block)
 
     def id_(self):
         is_array_elem = self.prev.class_ != Class.TYPE
@@ -504,14 +510,6 @@ class Parser:
                 self.eat(Class.RBRACE)
             self.eat(Class.SEMICOLON)
             return ArrayDecl(type_, id_, size, elems)
-        elif self.curr.class_ == Class.LPAREN:
-            self.eat(Class.LPAREN)
-            params = self.params()
-            self.eat(Class.RPAREN)
-            self.eat(Class.LBRACE)
-            block = self.block()
-            self.eat(Class.RBRACE)
-            return FuncImpl(type_, id_, params, block)
         else:
             self.eat(Class.SEMICOLON)
             return Decl(type_, id_)
@@ -525,6 +523,8 @@ class Parser:
         if self.curr.class_ == Class.ELSE:
             self.eat(Class.ELSE)
             false = self.block()
+            self.eat(Class.SEMICOLON)
+        else:
             self.eat(Class.SEMICOLON)
         return If(cond, true, false)
 
@@ -562,8 +562,8 @@ class Parser:
                 nodes.append(self.break_())
             elif self.curr.class_ == Class.CONTINUE:
                 nodes.append(self.continue_())
-            elif self.curr.class_ == Class.RETURN:
-                nodes.append(self.return_())
+            elif self.curr.class_ == Class.EXIT:
+                nodes.append(self.exit())
             elif self.curr.class_ == Class.TYPE:
                 nodes.append(self.decl())
             elif self.curr.class_ == Class.ID:
@@ -573,16 +573,6 @@ class Parser:
                 self.die_deriv(self.block.__name__)
         self.eat(Class.END)
         return Block(nodes)
-
-    def params(self):
-        params = []
-        while self.curr.class_ != Class.RPAREN:
-            if len(params) > 0:
-                self.eat(Class.COMMA)
-            type_ = self.type_()
-            id_ = self.id_()
-            params.append(Decl(type_, id_))
-        return Params(params)
 
     def args(self):
         args = []
@@ -613,11 +603,10 @@ class Parser:
                 self.eat(Class.STRING)
         return Elems(elems)
 
-    def return_(self):
-        self.eat(Class.RETURN)
-        expr = self.expr()
+    def exit(self):
+        self.eat(Class.EXIT)
         self.eat(Class.SEMICOLON)
-        return Return(expr)
+        return Exit()
 
     def break_(self):
         self.eat(Class.BREAK)
@@ -649,7 +638,7 @@ class Parser:
             return value
         elif self.curr.class_ == Class.ID:
             return self.id_()
-        elif self.curr.class_ in [Class.MINUS, Class.NOT, Class.ADDRESS]:
+        elif self.curr.class_ in [Class.MINUS, Class.NOT]:
             op = self.curr
             self.eat(self.curr.class_)
             first = None
@@ -762,10 +751,11 @@ class Parser:
             self.eat(Class.LPAREN)
             self.args()
             self.eat(Class.RPAREN)
-            print('</RESTORABLE>')
             return self.curr.class_ != Class.BEGIN
         except:
             return False
+        finally:
+            print('</RESTORABLE>')
 
     def parse(self):
         return self.program()
