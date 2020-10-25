@@ -2,6 +2,7 @@ from enum import Enum, auto
 from functools import wraps
 import pickle
 
+
 class Class(Enum):
     PLUS = auto()
     MINUS = auto()
@@ -9,8 +10,6 @@ class Class(Enum):
     DOT = auto()
     DIV = auto()
     MOD = auto()
-    # FWDSLASH = auto()
-    # PERCENT = auto()
 
     OR = auto()
     AND = auto()
@@ -62,6 +61,7 @@ class Class(Enum):
     ID = auto()
     EOF = auto()
 
+
 class Token:
     def __init__(self, class_, lexeme):
         self.class_ = class_
@@ -101,11 +101,9 @@ class Lexer:
         return lexeme
 
     def isOnlyOneChar(self):
-      if self.text[self.pos+2] == '\'':
-        return True
-      return False
-
-
+        if self.text[self.pos + 2] == '\'':
+            return True
+        return False
 
     def read_keyword(self):
         lexeme = self.text[self.pos]
@@ -165,7 +163,7 @@ class Lexer:
             token = self.read_keyword()
         elif curr.isdigit():
             token = Token(Class.INT, self.read_int())
-        elif curr == '\'' :
+        elif curr == '\'':
             if self.isOnlyOneChar():
                 token = Token(Class.CHAR, self.read_char())
             else:
@@ -257,6 +255,7 @@ class Lexer:
         print(self.pos)
         raise SystemExit("Unexpected character: {}".format(char))
 
+
 class Node():
     pass
 
@@ -270,6 +269,11 @@ class Decl(Node):
     def __init__(self, type_, id_):
         self.type_ = type_
         self.id_ = id_
+
+
+class Variables(Node):
+    def __init__(self, nodes):
+        self.nodes = nodes
 
 
 class ArrayDecl(Node):
@@ -429,9 +433,39 @@ class Parser:
                 self.eat(Class.BEGIN)
                 nodes.append(self.block())
                 self.eat(Class.END)
+            elif self.curr.class_ == Class.VAR:
+                nodes.append(self.variable_declaration_part())
+            elif self.curr.class_ == Class.PROCEDURE:
+                nodes.append(self.procedure_declaration_part())
             else:
                 self.die_deriv(self.program.__name__)
         return Program(nodes)
+
+    def variable_declaration_part(self):
+        self.eat(Class.VAR)
+        data_type_id = []
+        while self.curr.class_ == Class.ID:
+            data_type_id.extend(self.variable_declaration())
+        return Variables(data_type_id)
+
+    def variable_declaration(self):
+        data_type_id = []
+        ids = [self.curr.lexeme]
+        self.eat(Class.ID)
+        while self.curr.class_ != Class.COLON:
+            self.eat(Class.COMMA)
+            ids.append(self.curr.lexeme)
+            self.eat(Class.ID)
+        self.eat(Class.COLON)
+        data_type = self.curr.lexeme
+        for id_ in ids:
+            data_type_id.append(Decl(data_type, id_))
+        self.eat(Class.TYPE)
+        self.eat(Class.SEMICOLON)
+        return data_type_id
+
+    def procedure_declaration_part(self):
+        pass
 
     def id_(self):
         is_array_elem = self.prev.class_ != Class.TYPE
@@ -570,7 +604,7 @@ class Parser:
                 self.eat(Class.CHAR)
             elif self.curr.class_ == Class.STRING:
                 self.eat(Class.STRING)
-        return Args(args);
+        return Args(args)
 
     def elems(self):
         elems = []
@@ -645,22 +679,22 @@ class Parser:
 
     def term(self):
         first = self.factor()
-        # while self.curr.class_ in [Class.STAR, Class.FWDSLASH, Class.PERCENT]:
-        #     if self.curr.class_ == Class.STAR:
-        #         op = self.curr.lexeme
-        #         self.eat(Class.STAR)
-        #         second = self.factor()
-        #         first = BinOp(op, first, second)
-        #     elif self.curr.class_ == Class.FWDSLASH:
-        #         op = self.curr.lexeme
-        #         self.eat(Class.FWDSLASH)
-        #         second = self.factor()
-        #         first = BinOp(op, first, second)
-        #     elif self.curr.class_ == Class.PERCENT:
-        #         op = self.curr.lexeme
-        #         self.eat(Class.PERCENT)
-        #         second = self.factor()
-        #         first = BinOp(op, first, second)
+        while self.curr.class_ in [Class.STAR, Class.DIV, Class.MOD]:
+            if self.curr.class_ == Class.STAR:
+                op = self.curr.lexeme
+                self.eat(Class.STAR)
+                second = self.factor()
+                first = BinOp(op, first, second)
+            elif self.curr.class_ == Class.DIV:
+                op = self.curr.lexeme
+                self.eat(Class.DIV)
+                second = self.factor()
+                first = BinOp(op, first, second)
+            elif self.curr.class_ == Class.MOD:
+                op = self.curr.lexeme
+                self.eat(Class.MOD)
+                second = self.factor()
+                first = BinOp(op, first, second)
         return first
 
     def expr(self):
@@ -731,11 +765,12 @@ class Parser:
     @restorable
     def is_func_call(self):
         try:
-
+            print('<RESTORABLE>')
             self.eat(Class.LPAREN)
             self.args()
             self.eat(Class.RPAREN)
-            return self.curr.class_ == Class.SEMICOLON
+            print('</RESTORABLE>')
+            return self.curr.class_ != Class.BEGIN
         except:
             return False
 
@@ -750,8 +785,10 @@ class Parser:
 
     def die_type(self, expected, found):
         self.die("Expected: {}, Found: {}".format(expected, found))
-test_id = 1
-path = f'C:\\Users\\Matija\\Downloads\\test{test_id}.pas'
+
+
+test_id = 2
+path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
     text = source.read()
