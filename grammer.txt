@@ -1,4 +1,4 @@
-<program> =>						( <procedure_declaration> | <function_declaration>)* <main_declaration>
+<program> =>	( <procedure_declaration> | <function_declaration>)* <main_declaration>
 
 <procedure_declaration> =>			'procedure' <func_proc_header> ';' <func_proc_implementation>
 <function_declaration> =>			'function'  <func_proc_header> ':' <type> ';' <func_proc_implementation>
@@ -22,10 +22,16 @@
 <compare> =>						<expression> ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) <expression>		
 
 <expression> => 					<term> ( ( '+' | '-' ) <term> )*
-<term> => 							<fact> ( ( '*' | '/' | '%' ) <fact> )*
+<term> => 							<fact> ( ( '*' | 'div' | 'mod' ) <fact> )*
 <fact> => 							( '-' )? ( <identifier> | <array_element> | <function_call> | '(' <expression> ')' )
 
-<type> => 							'integer' | 'char' | 'string'
+<type> => 							<simple_type> | <array_type> 
+<simple_type> => 					'integer' | 'char' | 'string'
+<array_type> =>						'array' '[' <integer_constant> '.' '.' <integer_constant> ']' 'of' <simple_type> <array_element_declaration>?
+<array_element_declaration> =>		'=' '(' <integer_constant> ( ',' <integer_constant> )* ')	 	 
+
 <array_element> => 					<identifier> ( '[' <expression> ']' )+
+<identifier> =>						<letter> ( <letter> | <digit> )*
+<integer_constant> =>				<digit> <digit>*
 
 

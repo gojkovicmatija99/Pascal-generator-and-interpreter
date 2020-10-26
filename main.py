@@ -36,6 +36,7 @@ class Class(Enum):
 
     TYPE = auto()
     INT = auto()
+    REAL = auto()
     CHAR = auto()
     STRING = auto()
     ARRAY = auto()
@@ -52,6 +53,7 @@ class Class(Enum):
     TO = auto()
     DO = auto()
     THEN = auto()
+    OF = auto()
 
     BREAK = auto()
     CONTINUE = auto()
@@ -144,7 +146,9 @@ class Lexer:
             return Token(Class.MOD, lexeme)
         elif lexeme == 'then':
             return Token(Class.THEN, lexeme)
-        elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'void':
+        elif lexeme == 'of':
+            return Token(Class.OF, lexeme)
+        elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'void' or lexeme == 'string' or lexeme == 'real':
             return Token(Class.TYPE, lexeme)
         return Token(Class.ID, lexeme)
 
@@ -177,10 +181,6 @@ class Lexer:
             token = Token(Class.STAR, curr)
         elif curr == '.':
             token = Token(Class.DOT, curr)
-        elif curr == '/':
-            token = Token(Class.FWDSLASH, curr)
-        elif curr == '%':
-            token = Token(Class.PERCENT, curr)
         elif curr == '&':
             curr = self.next_char()
             if curr == '&':
@@ -277,10 +277,10 @@ class Variables(Node):
 
 
 class ArrayDecl(Node):
-    def __init__(self, type_, id_, size, elems):
+    def __init__(self, type_, start_index, end_index, elems):
         self.type_ = type_
-        self.id_ = id_
-        self.size = size
+        self.start_index = start_index
+        self.end_index = end_index
         self.elems = elems
 
 
@@ -491,7 +491,6 @@ class Parser:
             if self.curr.class_ == Class.SEMICOLON:
                 self.eat(Class.SEMICOLON)
         self.eat(Class.RPAREN)
-        return Params(params)
 
     def func_proc_implementation(self, vars, block):
         if self.curr.class_ == Class.VAR:
@@ -668,6 +667,42 @@ class Parser:
         return Continue()
 
     def type_(self):
+        if self.curr.class_ == Class.ARRAY:
+            return self.array_type()
+        else:
+            return self.simple_type()
+
+    def array_type(self):
+        self.eat(Class.ARRAY)
+        self.eat(Class.LBRACKET)
+        start_index = self.curr.lexeme
+        self.eat(Class.INT)
+        self.eat(Class.DOT)
+        self.eat(Class.DOT)
+        end_index = self.curr.lexeme
+        self.eat(Class.INT)
+        self.eat(Class.RBRACKET)
+        self.eat(Class.OF)
+        type_ = self.simple_type()
+        elems = None
+        if self.curr.class_ == Class.EQ:
+            elems = self.array_element_declaration()
+        return ArrayDecl(type_, start_index, end_index, elems)
+
+    def array_element_declaration(self):
+        self.eat(Class.EQ)
+        self.eat(Class.LPAREN)
+        elems = []
+        elems.append(self.curr.lexeme)
+        self.eat(Class.INT)
+        while self.curr.class_ == Class.COMMA:
+            self.eat(Class.COMMA)
+            elems.append(self.curr.lexeme)
+            self.eat(Class.INT)
+        self.eat(Class.RPAREN)
+        return Elems(elems)
+
+    def simple_type(self):
         type_ = Type(self.curr.lexeme)
         self.eat(Class.TYPE)
         return type_
@@ -819,7 +854,7 @@ class Parser:
         self.die("Expected: {}, Found: {}".format(expected, found))
 
 
-test_id = 9
+test_id = 10
 path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
