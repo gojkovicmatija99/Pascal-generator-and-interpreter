@@ -99,7 +99,7 @@ class Lexer:
         self.pos += 1
         return lexeme
 
-    def isOnlyOneChar(self):
+    def is_only_one_char(self):
         if self.text[self.pos + 2] == '\'':
             return True
         return False
@@ -165,7 +165,7 @@ class Lexer:
         elif curr.isdigit():
             token = Token(Class.INT, self.read_int())
         elif curr == '\'':
-            if self.isOnlyOneChar():
+            if self.is_only_one_char():
                 token = Token(Class.CHAR, self.read_char())
             else:
                 token = Token(Class.STRING, self.read_string())
@@ -256,7 +256,7 @@ class Lexer:
         raise SystemExit("Unexpected character: {}".format(char))
 
 
-class Node():
+class Node:
     pass
 
 
@@ -324,6 +324,21 @@ class Procedure(Node):
         self.block = block
 
 
+class Function(Node):
+    def __init__(self, id_, params, type_, variables, block):
+        self.id_ = id_
+        self.params = params
+        self.type_ = type_
+        self.variables = variables
+        self.block = block
+
+
+class Main(Node):
+    def __init__(self, variables, block):
+        self.variables = variables
+        self.block = block
+
+
 class FuncCall(Node):
     def __init__(self, id_, args):
         self.id_ = id_
@@ -334,9 +349,15 @@ class Block(Node):
     def __init__(self, nodes):
         self.nodes = nodes
 
+
 class Args(Node):
     def __init__(self, args):
         self.args = args
+
+
+class Params(Node):
+    def __init__(self, params):
+        self.args = params
 
 
 class Elems(Node):
@@ -420,16 +441,63 @@ class Parser:
 
     def program(self):
         nodes = []
-        while self.curr.class_ != Class.DOT:
-            if self.curr.class_ == Class.BEGIN:
-                nodes.append(self.block())
-            elif self.curr.class_ == Class.VAR:
-                nodes.append(self.variable_declaration_part())
-            elif self.curr.class_ == Class.PROCEDURE:
-                nodes.append(self.procedure_declaration_part())
+        while self.curr.class_ == Class.PROCEDURE or self.curr.class_ == Class.FUNCTION:
+            if self.curr.class_ == Class.PROCEDURE:
+                nodes.append(self.procedure_declaration())
+            elif self.curr.class_ == Class.FUNCTION:
+                nodes.append(self.function_declaration())
             else:
                 self.die_deriv(self.program.__name__)
+        nodes.append(self.main_declaration())
         return Program(nodes)
+
+    def main_declaration(self):
+        vars = None
+        if self.curr.class_ == Class.VAR:
+            vars = self.variable_declaration_part()
+        block = self.block()
+        self.eat(Class.DOT)
+        return Main(vars, block)
+
+    def procedure_declaration(self):
+        self.eat(Class.PROCEDURE)
+        id_ = None
+        params = []
+        self.func_proc_header(id_, params)
+        self.eat(Class.SEMICOLON)
+        vars = None
+        block = None
+        self.func_proc_implementation(vars, block)
+        return Procedure(id_, params, vars, block)
+
+    def function_declaration(self):
+        self.eat(Class.FUNCTION)
+        id_ = None
+        params = []
+        self.func_proc_header(id_, params)
+        self.eat(Class.COLON)
+        type_ = self.type_()
+        self.eat(Class.SEMICOLON)
+        vars = None
+        block = None
+        self.func_proc_implementation(vars, block)
+        return Function(id_, params, type_, vars, block)
+
+    def func_proc_header(self, id_, params):
+        id_ = self.id_()
+        self.eat(Class.LPAREN)
+        while self.curr.class_ == Class.ID:
+            params.extend(self.variable_declaration())
+            if self.curr.class_ == Class.SEMICOLON:
+                self.eat(Class.SEMICOLON)
+        self.eat(Class.RPAREN)
+        return Params(params)
+
+    def func_proc_implementation(self, vars, block):
+        if self.curr.class_ == Class.VAR:
+            vars = self.variable_declaration_part()
+        block = self.block()
+        self.eat(Class.SEMICOLON)
 
     def variable_declaration_part(self):
         self.eat(Class.VAR)
@@ -448,29 +516,10 @@ class Parser:
             ids.append(self.curr.lexeme)
             self.eat(Class.ID)
         self.eat(Class.COLON)
-        data_type = self.curr.lexeme
+        data_type = self.type_()
         for id_ in ids:
             data_type_id.append(Decl(data_type, id_))
-        self.eat(Class.TYPE)
         return data_type_id
-
-    def procedure_declaration_part(self):
-        self.eat(Class.PROCEDURE)
-        id_ = self.id_()
-        self.eat(Class.LPAREN)
-        params = []
-        while self.curr.class_ == Class.ID:
-            params.extend(self.variable_declaration())
-            if self.curr.class_ == Class.SEMICOLON:
-                self.eat(Class.SEMICOLON)
-        self.eat(Class.RPAREN)
-        self.eat(Class.SEMICOLON)
-        vars = None
-        if self.curr.class_ == Class.VAR:
-            vars = self.variable_declaration_part()
-        block = self.block()
-        self.eat(Class.SEMICOLON)
-        return Procedure(id_, params, vars, block)
 
     def id_(self):
         is_array_elem = self.prev.class_ != Class.TYPE

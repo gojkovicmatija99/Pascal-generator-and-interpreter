@@ -1,6 +1,11 @@
-<program> =>						( <procedure_declaration_part> | <variable_declaration_part> | <block> )* '.'
+<program> =>						( <procedure_declaration> | <function_declaration>)* <main_declaration>
 
-<procedure_declaration> =>			'procedure' <identifier> '(' ( <variable_declaration> ';' )* ')' ';' <variable_declaration_part>? <block> ';'
+<procedure_declaration> =>			'procedure' <func_proc_header> ';' <func_proc_implementation>
+<function_declaration> =>			'function'  <func_proc_header> ':' <type> ';' <func_proc_implementation>
+<main_declaration> =>				<variable_declaration_part>? | <block> '.'				
+
+<func_proc_header> =>				<identifier> '(' ( <variable_declaration> ';' )* ')'
+<func_proc_implementation> =>		<variable_declaration_part>? <block> ';'	
 <variable_declaration_part> =>		'var' (<variable declaration> ';')*
 <variable_declaration> => 			<identifier> ( ',' <identifier> )* ':' <type>
 <block> =>							'begin' (	<if_statement> | <while_statement> | <for_statement> | 
@@ -18,7 +23,7 @@
 
 <expression> => 					<term> ( ( '+' | '-' ) <term> )*
 <term> => 							<fact> ( ( '*' | '/' | '%' ) <fact> )*
-<fact> => 							( '-' )? ( <identifier> | ARRAY_ELEM | <function_call> | '(' <expression> ')' )
+<fact> => 							( '-' )? ( <identifier> | <array_element> | <function_call> | '(' <expression> ')' )
 
 <type> => 							'integer' | 'char' | 'string'
 <array_element> => 					<identifier> ( '[' <expression> ']' )+
