@@ -17,6 +17,8 @@
 
 <for_statement> => 					'for' <expression> 'to' <expression> 'do' <block> ';'
 <if_statement> =>					'if'  <logic_expression> 'then' <block> ( ';' | ( 'else' <block> ';') ) 
+<while_statement> =>				'while' <logic_expression> 'do' <block> ';'
+<repeat_statement> =>				******************************************
 				
 <logic_expression> 					<compare> ( ( '&&' | '||' ) <compare> )?
 <compare> =>						<expression> ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) <expression>		
@@ -26,7 +28,7 @@
 <fact> => 							( '-' )? ( <identifier> | <array_element> | <function_call> | '(' <expression> ')' )
 
 <type> => 							<simple_type> | <array_type> 
-<simple_type> => 					'integer' | 'char' | 'string'
+<simple_type> => 					'integer' | 'char' | 'string' | 'real' | 'boolean'
 <array_type> =>						'array' '[' <integer_constant> '.' '.' <integer_constant> ']' 'of' <simple_type> <array_element_declaration>?
 <array_element_declaration> =>		'=' '(' <integer_constant> ( ',' <integer_constant> )* ')	 	 
 

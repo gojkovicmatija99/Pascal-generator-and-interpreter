@@ -147,6 +147,12 @@ class Lexer:
             return Token(Class.THEN, lexeme)
         elif lexeme == 'of':
             return Token(Class.OF, lexeme)
+        elif lexeme == 'and':
+            return Token(Class.AND, lexeme)
+        elif lexeme == 'or':
+            return Token(Class.OR, lexeme)
+        elif lexeme == 'not':
+            return Token(Class.NOT, lexeme)
         elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'string' or lexeme == 'real' or lexeme == 'boolean':
             return Token(Class.TYPE, lexeme)
         return Token(Class.ID, lexeme)
@@ -180,18 +186,6 @@ class Lexer:
             token = Token(Class.STAR, curr)
         elif curr == '.':
             token = Token(Class.DOT, curr)
-        elif curr == '&':
-            curr = self.next_char()
-            if curr == '&':
-                token = Token(Class.AND, '&&')
-            else:
-                self.die(curr)
-        elif curr == '|':
-            curr = self.next_char()
-            if curr == '|':
-                token = Token(Class.OR, '||')
-            else:
-                self.die(curr)
         elif curr == '=':
             token = Token(Class.EQ, '=')
         elif curr == ':':
@@ -484,7 +478,7 @@ class Parser:
         return Function(id_, params, type_, vars, block)
 
     def func_proc_header(self, id_, params):
-        id_ = self.id_()
+        id_ = self.identifier()
         self.eat(Class.LPAREN)
         while self.curr.class_ == Class.ID:
             params.extend(self.variable_declaration())
@@ -520,7 +514,7 @@ class Parser:
             data_type_id.append(Decl(data_type, id_))
         return data_type_id
 
-    def id_(self):
+    def identifier(self):
         is_array_elem = self.prev.class_ != Class.TYPE
         id_ = Id(self.curr.lexeme)
         self.eat(Class.ID)
@@ -531,19 +525,19 @@ class Parser:
             return FuncCall(id_, args)
         elif self.curr.class_ == Class.LBRACKET and is_array_elem:
             self.eat(Class.LBRACKET)
-            index = self.expr()
+            index = self.expression()
             self.eat(Class.RBRACKET)
             id_ = ArrayElem(id_, index)
         if self.curr.class_ == Class.ASSIGN:
             self.eat(Class.ASSIGN)
-            expr = self.expr()
+            expr = self.expression()
             return Assign(id_, expr)
         else:
             return id_
 
-    def if_(self):
+    def if_statement(self):
         self.eat(Class.IF)
-        cond = self.logic()
+        cond = self.logic_expression()
         self.eat(Class.THEN)
         true = self.block()
         false = None
@@ -555,21 +549,21 @@ class Parser:
             self.eat(Class.SEMICOLON)
         return If(cond, true, false)
 
-    def while_(self):
+    def while_statement(self):
         self.eat(Class.WHILE)
-        self.eat(Class.LPAREN)
-        cond = self.logic()
-        self.eat(Class.RPAREN)
-        self.eat(Class.LBRACE)
+        cond = self.logic_expression()
+        self.eat(Class.DO)
         block = self.block()
-        self.eat(Class.RBRACE)
+        self.eat(Class.SEMICOLON)
         return While(cond, block)
 
-    def for_(self):
+
+
+    def for_statement(self):
         self.eat(Class.FOR)
-        start = self.expr()
+        start = self.expression()
         self.eat(Class.TO)
-        end = self.expr()
+        end = self.expression()
         self.eat(Class.DO)
         block = self.block()
         self.eat(Class.SEMICOLON)
@@ -580,11 +574,11 @@ class Parser:
         nodes = []
         while self.curr.class_ != Class.END:
             if self.curr.class_ == Class.IF:
-                nodes.append(self.if_())
+                nodes.append(self.if_statement())
             elif self.curr.class_ == Class.WHILE:
-                nodes.append(self.while_())
+                nodes.append(self.while_statement())
             elif self.curr.class_ == Class.FOR:
-                nodes.append(self.for_())
+                nodes.append(self.for_statement())
             elif self.curr.class_ == Class.BREAK:
                 nodes.append(self.break_())
             elif self.curr.class_ == Class.CONTINUE:
@@ -592,7 +586,7 @@ class Parser:
             elif self.curr.class_ == Class.EXIT:
                 nodes.append(self.exit())
             elif self.curr.class_ == Class.ID:
-                nodes.append(self.id_())
+                nodes.append(self.identifier())
                 self.eat(Class.SEMICOLON)
             else:
                 self.die_deriv(self.block.__name__)
@@ -605,7 +599,7 @@ class Parser:
         while self.curr.class_ != Class.RPAREN:
             if len(args) > 0:
                 self.eat(Class.COMMA)
-            args.append(self.expr())
+            args.append(self.expression())
             if self.curr.class_ == Class.INT:
                 self.eat(Class.INT)
             elif self.curr.class_ == Class.CHAR:
@@ -696,21 +690,21 @@ class Parser:
             self.eat(Class.REAL)
             return value
         elif self.curr.class_ == Class.ID:
-            return self.id_()
+            return self.identifier()
         elif self.curr.class_ in [Class.MINUS, Class.NOT]:
             op = self.curr
             self.eat(self.curr.class_)
             first = None
             if self.curr.class_ == Class.LPAREN:
                 self.eat(Class.LPAREN)
-                first = self.logic()
+                first = self.logic_expression()
                 self.eat(Class.RPAREN)
             else:
                 first = self.factor()
             return UnOp(op.lexeme, first)
         elif self.curr.class_ == Class.LPAREN:
             self.eat(Class.LPAREN)
-            first = self.logic()
+            first = self.logic_expression()
             self.eat(Class.RPAREN)
             return first
         elif self.curr.class_ == Class.SEMICOLON:
@@ -738,7 +732,7 @@ class Parser:
                 first = BinOp(op, first, second)
         return first
 
-    def expr(self):
+    def expression(self):
         first = self.term()
         while self.curr.class_ in [Class.PLUS, Class.MINUS]:
             if self.curr.class_ == Class.PLUS:
@@ -754,41 +748,41 @@ class Parser:
         return first
 
     def compare(self):
-        first = self.expr()
+        first = self.expression()
         if self.curr.class_ == Class.EQ:
             op = self.curr.lexeme
             self.eat(Class.EQ)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         elif self.curr.class_ == Class.NEQ:
             op = self.curr.lexeme
             self.eat(Class.NEQ)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         elif self.curr.class_ == Class.LT:
             op = self.curr.lexeme
             self.eat(Class.LT)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         elif self.curr.class_ == Class.GT:
             op = self.curr.lexeme
             self.eat(Class.GT)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         elif self.curr.class_ == Class.LTE:
             op = self.curr.lexeme
             self.eat(Class.LTE)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         elif self.curr.class_ == Class.GTE:
             op = self.curr.lexeme
             self.eat(Class.GTE)
-            second = self.expr()
+            second = self.expression()
             return BinOp(op, first, second)
         else:
             return first
 
-    def logic(self):
+    def logic_expression(self):
         first = self.compare()
         if self.curr.class_ == Class.AND:
             op = self.curr.lexeme
@@ -829,22 +823,18 @@ class Parser:
         self.die("Expected: {}, Found: {}".format(expected, found))
 
 
-try:
-    i = 0
-    for i in range(10):
-        test_id = i + 1
-        path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
+i = 0
+for i in range(1):
+    test_id = 11
+    path = f'.\\test\\test{test_id}.pas'
 
-        with open(path, 'r') as source:
-            text = source.read()
+    with open(path, 'r') as source:
+        text = source.read()
 
-            lexer = Lexer(text)
-            tokens = lexer.lex()
+        lexer = Lexer(text)
+        tokens = lexer.lex()
 
-            parser = Parser(tokens)
-            ast = parser.parse()
+        parser = Parser(tokens)
+        ast = parser.parse()
 
-            print(ast)
-except:
-    sys.stderr.write(f'error in test{i+1}.pas')
-    sys.exit(3)
+        print(ast)
