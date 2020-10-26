@@ -1,7 +1,9 @@
+import os
 from enum import Enum, auto
 from functools import wraps
 import pickle
 import sys
+
 
 class Class(Enum):
     PLUS = auto()
@@ -43,6 +45,8 @@ class Class(Enum):
     ELSE = auto()
     WHILE = auto()
     FOR = auto()
+    REPEAT = auto()
+    UNTIL = auto()
     BEGIN = auto()
     END = auto()
     VAR = auto()
@@ -61,6 +65,7 @@ class Class(Enum):
 
     DOT = auto()
     EOF = auto()
+
 
 class Token:
     def __init__(self, class_, lexeme):
@@ -117,6 +122,10 @@ class Lexer:
             return Token(Class.WHILE, lexeme)
         elif lexeme == 'for':
             return Token(Class.FOR, lexeme)
+        elif lexeme == 'repeat':
+            return Token(Class.REPEAT, lexeme)
+        elif lexeme == 'until':
+            return Token(Class.UNTIL, lexeme)
         elif lexeme == 'break':
             return Token(Class.BREAK, lexeme)
         elif lexeme == 'continue':
@@ -293,6 +302,12 @@ class While(Node):
         self.block = block
 
 
+class Repeat(Node):
+    def __init__(self, cond, block):
+        self.cond = cond
+        self.block = block
+
+
 class For(Node):
     def __init__(self, start, end, block):
         self.start = start
@@ -449,7 +464,7 @@ class Parser:
         vars = None
         if self.curr.class_ == Class.VAR:
             vars = self.variable_declaration_part()
-        block = self.block()
+        block = self.begin_block_end()
         self.eat(Class.DOT)
         return Main(vars, block)
 
@@ -489,7 +504,7 @@ class Parser:
     def func_proc_implementation(self, vars, block):
         if self.curr.class_ == Class.VAR:
             vars = self.variable_declaration_part()
-        block = self.block()
+        block = self.begin_block_end()
         self.eat(Class.SEMICOLON)
 
     def variable_declaration_part(self):
@@ -539,11 +554,11 @@ class Parser:
         self.eat(Class.IF)
         cond = self.logic_expression()
         self.eat(Class.THEN)
-        true = self.block()
+        true = self.begin_block_end()
         false = None
         if self.curr.class_ == Class.ELSE:
             self.eat(Class.ELSE)
-            false = self.block()
+            false = self.begin_block_end()
             self.eat(Class.SEMICOLON)
         else:
             self.eat(Class.SEMICOLON)
@@ -553,11 +568,9 @@ class Parser:
         self.eat(Class.WHILE)
         cond = self.logic_expression()
         self.eat(Class.DO)
-        block = self.block()
+        block = self.begin_block_end()
         self.eat(Class.SEMICOLON)
         return While(cond, block)
-
-
 
     def for_statement(self):
         self.eat(Class.FOR)
@@ -565,20 +578,35 @@ class Parser:
         self.eat(Class.TO)
         end = self.expression()
         self.eat(Class.DO)
-        block = self.block()
+        block = self.begin_block_end()
         self.eat(Class.SEMICOLON)
         return For(start, end, block)
 
-    def block(self):
+    def repeat_statement(self):
+        self.eat(Class.REPEAT)
+        block = self.block()
+        self.eat(Class.UNTIL)
+        cond = self.logic_expression()
+        self.eat(Class.SEMICOLON)
+        return Repeat(cond, block)
+
+    def begin_block_end(self):
         self.eat(Class.BEGIN)
+        block = self.block()
+        self.eat(Class.END)
+        return block
+
+    def block(self):
         nodes = []
-        while self.curr.class_ != Class.END:
+        while self.curr.class_ != Class.END and self.curr.class_ != Class.UNTIL:
             if self.curr.class_ == Class.IF:
                 nodes.append(self.if_statement())
             elif self.curr.class_ == Class.WHILE:
                 nodes.append(self.while_statement())
             elif self.curr.class_ == Class.FOR:
                 nodes.append(self.for_statement())
+            elif self.curr.class_ == Class.REPEAT:
+                nodes.append(self.repeat_statement())
             elif self.curr.class_ == Class.BREAK:
                 nodes.append(self.break_())
             elif self.curr.class_ == Class.CONTINUE:
@@ -590,7 +618,6 @@ class Parser:
                 self.eat(Class.SEMICOLON)
             else:
                 self.die_deriv(self.block.__name__)
-        self.eat(Class.END)
         return Block(nodes)
 
     def args(self):
@@ -822,19 +849,21 @@ class Parser:
     def die_type(self, expected, found):
         self.die("Expected: {}, Found: {}".format(expected, found))
 
+try:
+    i = 0
+    for i in range(12):
+        test_id = i+1
+        path = f'.\\test\\test{test_id}.pas'
 
-i = 0
-for i in range(1):
-    test_id = 11
-    path = f'.\\test\\test{test_id}.pas'
+        with open(path, 'r') as source:
+            text = source.read()
 
-    with open(path, 'r') as source:
-        text = source.read()
+            lexer = Lexer(text)
+            tokens = lexer.lex()
 
-        lexer = Lexer(text)
-        tokens = lexer.lex()
+            parser = Parser(tokens)
+            ast = parser.parse()
 
-        parser = Parser(tokens)
-        ast = parser.parse()
-
-        print(ast)
+            print(ast)
+except:
+    print(f'error in test{i+1}.pas')
