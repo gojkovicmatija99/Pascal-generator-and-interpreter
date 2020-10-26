@@ -1,13 +1,12 @@
 from enum import Enum, auto
 from functools import wraps
 import pickle
-
+import sys
 
 class Class(Enum):
     PLUS = auto()
     MINUS = auto()
     STAR = auto()
-    DOT = auto()
     DIV = auto()
     MOD = auto()
 
@@ -26,8 +25,6 @@ class Class(Enum):
     RPAREN = auto()
     LBRACKET = auto()
     RBRACKET = auto()
-    LBRACE = auto()
-    RBRACE = auto()
 
     ASSIGN = auto()
     SEMICOLON = auto()
@@ -38,6 +35,7 @@ class Class(Enum):
     INT = auto()
     REAL = auto()
     CHAR = auto()
+    BOOLEAN = auto()
     STRING = auto()
     ARRAY = auto()
 
@@ -60,8 +58,9 @@ class Class(Enum):
     EXIT = auto()
 
     ID = auto()
-    EOF = auto()
 
+    DOT = auto()
+    EOF = auto()
 
 class Token:
     def __init__(self, class_, lexeme):
@@ -148,7 +147,7 @@ class Lexer:
             return Token(Class.THEN, lexeme)
         elif lexeme == 'of':
             return Token(Class.OF, lexeme)
-        elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'void' or lexeme == 'string' or lexeme == 'real':
+        elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'string' or lexeme == 'real' or lexeme == 'boolean':
             return Token(Class.TYPE, lexeme)
         return Token(Class.ID, lexeme)
 
@@ -193,13 +192,6 @@ class Lexer:
                 token = Token(Class.OR, '||')
             else:
                 self.die(curr)
-        elif curr == '!':
-            curr = self.next_char()
-            if curr == '=':
-                token = Token(Class.NEQ, '!=')
-            else:
-                token = Token(Class.NOT, '!')
-                self.pos -= 1
         elif curr == '=':
             token = Token(Class.EQ, '=')
         elif curr == ':':
@@ -212,6 +204,8 @@ class Lexer:
             curr = self.next_char()
             if curr == '=':
                 token = Token(Class.LTE, '<=')
+            elif curr == '>':
+                token = Token(Class.NEQ, '<>')
             else:
                 token = Token(Class.LT, '<')
                 self.pos -= 1
@@ -230,10 +224,6 @@ class Lexer:
             token = Token(Class.LBRACKET, curr)
         elif curr == ']':
             token = Token(Class.RBRACKET, curr)
-        elif curr == '{':
-            token = Token(Class.LBRACE, curr)
-        elif curr == '}':
-            token = Token(Class.RBRACE, curr)
         elif curr == ';':
             token = Token(Class.SEMICOLON, curr)
         elif curr == ',':
@@ -383,6 +373,16 @@ class Type(Node):
 
 
 class Int(Node):
+    def __init__(self, value):
+        self.value = value
+
+
+class Real(Node):
+    def __init__(self, value):
+        self.value = value
+
+
+class Boolean(Node):
     def __init__(self, value):
         self.value = value
 
@@ -541,27 +541,6 @@ class Parser:
         else:
             return id_
 
-    def decl(self):
-        type_ = self.type_()
-        id_ = self.id_()
-        if self.curr.class_ == Class.LBRACKET:
-            self.eat(Class.LBRACKET)
-            size = None
-            if self.curr.class_ != Class.RBRACKET:
-                size = self.expr()
-            self.eat(Class.RBRACKET)
-            elems = None
-            if self.curr.class_ == Class.ASSIGN:
-                self.eat(Class.ASSIGN)
-                self.eat(Class.LBRACE)
-                elems = self.elems()
-                self.eat(Class.RBRACE)
-            self.eat(Class.SEMICOLON)
-            return ArrayDecl(type_, id_, size, elems)
-        else:
-            self.eat(Class.SEMICOLON)
-            return Decl(type_, id_)
-
     def if_(self):
         self.eat(Class.IF)
         cond = self.logic()
@@ -612,8 +591,6 @@ class Parser:
                 nodes.append(self.continue_())
             elif self.curr.class_ == Class.EXIT:
                 nodes.append(self.exit())
-            elif self.curr.class_ == Class.TYPE:
-                nodes.append(self.decl())
             elif self.curr.class_ == Class.ID:
                 nodes.append(self.id_())
                 self.eat(Class.SEMICOLON)
@@ -635,21 +612,11 @@ class Parser:
                 self.eat(Class.CHAR)
             elif self.curr.class_ == Class.STRING:
                 self.eat(Class.STRING)
+            elif self.curr.class_ == Class.REAL:
+                self.eat(Class.REAL)
+            elif self.curr.class_ == Class.BOOLEAN:
+                self.eat(Class.REAL)
         return Args(args)
-
-    def elems(self):
-        elems = []
-        while self.curr.class_ != Class.RBRACE:
-            if len(elems) > 0:
-                self.eat(Class.COMMA)
-            elems.append(self.expr())
-            if self.curr.class_ == Class.INT:
-                self.eat(Class.INT)
-            elif self.curr.class_ == Class.CHAR:
-                self.eat(Class.CHAR)
-            elif self.curr.class_ == Class.STRING:
-                self.eat(Class.STRING)
-        return Elems(elems)
 
     def exit(self):
         self.eat(Class.EXIT)
@@ -719,6 +686,14 @@ class Parser:
         elif self.curr.class_ == Class.STRING:
             value = String(self.curr.lexeme)
             self.eat(Class.STRING)
+            return value
+        elif self.curr.class_ == Class.BOOLEAN:
+            value = Boolean(self.curr.lexeme)
+            self.eat(Class.BOOLEAN)
+            return value
+        elif self.curr.class_ == Class.REAL:
+            value = Real(self.curr.lexeme)
+            self.eat(Class.REAL)
             return value
         elif self.curr.class_ == Class.ID:
             return self.id_()
@@ -854,16 +829,22 @@ class Parser:
         self.die("Expected: {}, Found: {}".format(expected, found))
 
 
-test_id = 10
-path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
+try:
+    i = 0
+    for i in range(10):
+        test_id = i + 1
+        path = f'C:\\Users\\Matija\\Downloads\\test\\test{test_id}.pas'
 
-with open(path, 'r') as source:
-    text = source.read()
+        with open(path, 'r') as source:
+            text = source.read()
 
-    lexer = Lexer(text)
-    tokens = lexer.lex()
+            lexer = Lexer(text)
+            tokens = lexer.lex()
 
-    parser = Parser(tokens)
-    ast = parser.parse()
+            parser = Parser(tokens)
+            ast = parser.parse()
 
-    print(ast)
+            print(ast)
+except:
+    sys.stderr.write(f'error in test{i+1}.pas')
+    sys.exit(3)
