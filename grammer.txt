@@ -1,8 +1,7 @@
-<program> =>	( <procedure_declaration> | <function_declaration>)* <main_declaration>
+<program> =>	( <procedure_declaration> | <function_declaration>)* <variable_declaration_part>?  <begin_block_end> '.'
 
 <procedure_declaration> =>			'procedure' <func_proc_header> ';' <func_proc_implementation>
-<function_declaration> =>			'function'  <func_proc_header> ':' <type> ';' <func_proc_implementation>
-<main_declaration> =>				<variable_declaration_part>? | <begin_block_end> '.'				
+<function_declaration> =>			'function'  <func_proc_header> ':' <type> ';' <func_proc_implementation>					
 
 <func_proc_header> =>				<identifier> '(' ( <variable_declaration> ';' )* ')'
 <func_proc_implementation> =>		<variable_declaration_part>? <begin_block_end> ';'	

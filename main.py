@@ -334,12 +334,6 @@ class Function(Node):
         self.block = block
 
 
-class Main(Node):
-    def __init__(self, variables, block):
-        self.variables = variables
-        self.block = block
-
-
 class FuncCall(Node):
     def __init__(self, id_, args):
         self.id_ = id_
@@ -448,7 +442,6 @@ class Parser:
             self.curr = self.tokens.pop(0)
         else:
             self.die_type(class_.name, self.curr.class_.name)
-        print(f'{class_}\n')
 
     def program(self):
         nodes = []
@@ -459,16 +452,11 @@ class Parser:
                 nodes.append(self.function_declaration())
             else:
                 self.die_deriv(self.program.__name__)
-        nodes.append(self.main_declaration())
-        return Program(nodes)
-
-    def main_declaration(self):
-        vars = None
         if self.curr.class_ == Class.VAR:
-            vars = self.variable_declaration_part()
-        block = self.begin_block_end()
+            nodes.append(self.variable_declaration_part())
+        nodes.append(self.begin_block_end())
         self.eat(Class.DOT)
-        return Main(vars, block)
+        return Program(nodes)
 
     def procedure_declaration(self):
         self.eat(Class.PROCEDURE)
@@ -519,12 +507,11 @@ class Parser:
 
     def variable_declaration(self):
         data_type_id = []
-        ids = [self.curr.lexeme]
-        self.eat(Class.ID)
+        ids = []
+        ids.append(self.identifier())
         while self.curr.class_ != Class.COLON:
             self.eat(Class.COMMA)
-            ids.append(self.curr.lexeme)
-            self.eat(Class.ID)
+            ids.append(self.identifier())
         self.eat(Class.COLON)
         data_type = self.type_()
         for id_ in ids:
@@ -665,11 +652,11 @@ class Parser:
     def array_type(self):
         self.eat(Class.ARRAY)
         self.eat(Class.LBRACKET)
-        start_index = self.curr.lexeme
+        start_index = Int(self.curr.lexeme)
         self.eat(Class.INT)
         self.eat(Class.DOT)
         self.eat(Class.DOT)
-        end_index = self.curr.lexeme
+        end_index = Int(self.curr.lexeme)
         self.eat(Class.INT)
         self.eat(Class.RBRACKET)
         self.eat(Class.OF)
@@ -829,15 +816,12 @@ class Parser:
     @restorable
     def is_func_call(self):
         try:
-            print('<RESTORABLE>')
             self.eat(Class.LPAREN)
             self.args()
             self.eat(Class.RPAREN)
             return self.curr.class_ != Class.BEGIN
         except:
             return False
-        finally:
-            print('</RESTORABLE>')
 
     def parse(self):
         return self.program()
@@ -901,25 +885,24 @@ class Grapher(Visitor):
         for n in node.nodes:
             self.visit(node, n)
 
-    def visit_Main(self, parent, node):
+    def visit_Procedure(self, parent, node):
+        print("here1")
         self.add_node(parent, node)
+        print("here2")
+        #self.visit(node, node.id_)
+        print("here3")
+        self.visit(node, node.params)
+        print("here4")
         if node.variables is not None:
             self.visit(node, node.variables)
-        self.visit(node, node.block)
-
-    def visit_Procedure(self, parent, node):
-        self.add_node(parent, node)
-        self.visit(node, node.id_)
-        self.visit(node, node.params)
-        #self.visit(node, node.variables)
-        self.visit(node, node.block)
+        print("here5")
+        #self.visit(node, node.block)
 
     def visit_ArrayDecl(self, parent, node):
         self.add_node(parent, node)
         self.visit(node, node.type_)
-        self.visit(node, node.id_)
-        if node.size is not None:
-            self.visit(node, node.size)
+        self.visit(node, node.start_index)
+        self.visit(node, node.end_index)
         if node.elems is not None:
             self.visit(node, node.elems)
 
@@ -947,9 +930,13 @@ class Grapher(Visitor):
 
     def visit_For(self, parent, node):
         self.add_node(parent, node)
-        self.visit(node, node.init)
+        self.visit(node, node.start)
+        self.visit(node, node.end)
+        self.visit(node, node.block)
+
+    def visit_Repeat(self, parent, node):
+        self.add_node(parent, node)
         self.visit(node, node.cond)
-        self.visit(node, node.step)
         self.visit(node, node.block)
 
     def visit_FuncImpl(self, parent, node):
@@ -1032,8 +1019,8 @@ class Grapher(Visitor):
         return s.view()
 
 
-test_id = 1
-path = f'./test/test{test_id}.pas'
+test_id = 12
+path = f'test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
     text = source.read()
@@ -1047,4 +1034,4 @@ with open(path, 'r') as source:
     grapher = Grapher(ast)
     img = grapher.graph()
 
-    print(ast)
+Image(img)
