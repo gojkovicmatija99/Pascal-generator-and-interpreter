@@ -464,7 +464,7 @@ class Parser:
         id_params = self.func_proc_header()
         self.eat(Class.SEMICOLON)
         vars_block = self.func_proc_implementation()
-        return Procedure(id_params[0], Params(id_params[1]), vars_block[0], vars_block[1])
+        return Procedure(id_params[0], id_params[1], vars_block[0], vars_block[1])
 
     def function_declaration(self):
         self.eat(Class.FUNCTION)
@@ -473,7 +473,7 @@ class Parser:
         type_ = self.type_()
         self.eat(Class.SEMICOLON)
         vars_block = self.func_proc_implementation()
-        return Function(id_params[0], Params(id_params[1]), type_, vars_block[0], vars_block[1])
+        return Function(id_params[0], id_params[1], type_, vars_block[0], vars_block[1])
 
 
     def func_proc_header(self):
@@ -485,6 +485,7 @@ class Parser:
             if self.curr.class_ == Class.SEMICOLON:
                 self.eat(Class.SEMICOLON)
         self.eat(Class.RPAREN)
+        params = Params(params)
         return [id_, params]
 
     def func_proc_implementation(self):
@@ -668,11 +669,11 @@ class Parser:
         self.eat(Class.EQ)
         self.eat(Class.LPAREN)
         elems = []
-        elems.append(self.curr.lexeme)
+        elems.append(Int(self.curr.lexeme))
         self.eat(Class.INT)
         while self.curr.class_ == Class.COMMA:
             self.eat(Class.COMMA)
-            elems.append(self.curr.lexeme)
+            elems.append(Int(self.curr.lexeme))
             self.eat(Class.INT)
         self.eat(Class.RPAREN)
         return Elems(elems)
