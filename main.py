@@ -352,7 +352,7 @@ class Args(Node):
 
 class Params(Node):
     def __init__(self, params):
-        self.args = params
+        self.params = params
 
 
 class Elems(Node):
@@ -458,44 +458,42 @@ class Parser:
         self.eat(Class.DOT)
         return Program(nodes)
 
+
     def procedure_declaration(self):
         self.eat(Class.PROCEDURE)
-        id_ = None
-        params = []
-        self.func_proc_header(id_, params)
+        id_params = self.func_proc_header()
         self.eat(Class.SEMICOLON)
-        vars = None
-        block = None
-        self.func_proc_implementation(vars, block)
-        return Procedure(id_, params, vars, block)
+        vars_block = self.func_proc_implementation()
+        return Procedure(id_params[0], Params(id_params[1]), vars_block[0], vars_block[1])
 
     def function_declaration(self):
         self.eat(Class.FUNCTION)
-        id_ = None
-        params = []
-        self.func_proc_header(id_, params)
+        id_params = self.func_proc_header()
         self.eat(Class.COLON)
         type_ = self.type_()
         self.eat(Class.SEMICOLON)
-        vars = None
-        block = None
-        self.func_proc_implementation(vars, block)
-        return Function(id_, params, type_, vars, block)
+        vars_block = self.func_proc_implementation()
+        return Function(id_params[0], Params(id_params[1]), type_, vars_block[0], vars_block[1])
 
-    def func_proc_header(self, id_, params):
+
+    def func_proc_header(self):
         id_ = self.identifier()
         self.eat(Class.LPAREN)
+        params = []
         while self.curr.class_ == Class.ID:
             params.extend(self.variable_declaration())
             if self.curr.class_ == Class.SEMICOLON:
                 self.eat(Class.SEMICOLON)
         self.eat(Class.RPAREN)
+        return [id_, params]
 
-    def func_proc_implementation(self, vars, block):
+    def func_proc_implementation(self):
+        vars = None
         if self.curr.class_ == Class.VAR:
             vars = self.variable_declaration_part()
         block = self.begin_block_end()
         self.eat(Class.SEMICOLON)
+        return [vars, block]
 
     def variable_declaration_part(self):
         self.eat(Class.VAR)
@@ -886,17 +884,12 @@ class Grapher(Visitor):
             self.visit(node, n)
 
     def visit_Procedure(self, parent, node):
-        print("here1")
         self.add_node(parent, node)
-        print("here2")
-        #self.visit(node, node.id_)
-        print("here3")
+        self.visit(node, node.id_)
         self.visit(node, node.params)
-        print("here4")
         if node.variables is not None:
             self.visit(node, node.variables)
-        print("here5")
-        #self.visit(node, node.block)
+        self.visit(node, node.block)
 
     def visit_ArrayDecl(self, parent, node):
         self.add_node(parent, node)
@@ -939,11 +932,13 @@ class Grapher(Visitor):
         self.visit(node, node.cond)
         self.visit(node, node.block)
 
-    def visit_FuncImpl(self, parent, node):
+    def visit_Function(self, parent, node):
         self.add_node(parent, node)
-        self.visit(node, node.type_)
         self.visit(node, node.id_)
         self.visit(node, node.params)
+        self.visit(node, node.type_)
+        if node.variables is not None:
+            self.visit(node, node.variables)
         self.visit(node, node.block)
 
     def visit_FuncCall(self, parent, node):
@@ -977,10 +972,8 @@ class Grapher(Visitor):
     def visit_Continue(self, parent, node):
         self.add_node(parent, node)
 
-    def visit_Return(self, parent, node):
+    def visit_Exit(self, parent, node):
         self.add_node(parent, node)
-        if node.expr is not None:
-            self.visit(node, node.expr)
 
     def visit_Type(self, parent, node):
         name = node.value
@@ -1019,7 +1012,7 @@ class Grapher(Visitor):
         return s.view()
 
 
-test_id = 12
+test_id = 3
 path = f'test\\test{test_id}.pas'
 
 with open(path, 'r') as source:
