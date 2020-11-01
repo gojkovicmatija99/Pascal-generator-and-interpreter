@@ -31,4 +31,8 @@ begin
     begin
         writeln('Line 4 - Condition is true' );
     end;
+    if not (a xor b) then
+    begin
+        writeln('Line 5 - Condition is true' );
+    end;
 end.

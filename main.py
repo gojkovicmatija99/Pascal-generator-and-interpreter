@@ -17,6 +17,7 @@ class Class(Enum):
     OR = auto()
     AND = auto()
     NOT = auto()
+    XOR = auto()
 
     EQ = auto()
     NEQ = auto()
@@ -164,6 +165,8 @@ class Lexer:
             return Token(Class.OR, lexeme)
         elif lexeme == 'not':
             return Token(Class.NOT, lexeme)
+        elif lexeme == 'xor':
+            return Token(Class.XOR, lexeme)
         elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'string' or lexeme == 'real' or lexeme == 'boolean':
             return Token(Class.TYPE, lexeme)
         return Token(Class.ID, lexeme)
@@ -477,7 +480,8 @@ class Parser:
 
 
     def func_proc_header(self):
-        id_ = self.identifier()
+        id_ = Id(self.curr.lexeme)
+        self.eat(Class.ID)
         self.eat(Class.LPAREN)
         params = []
         while self.curr.class_ == Class.ID:
@@ -485,7 +489,10 @@ class Parser:
             if self.curr.class_ == Class.SEMICOLON:
                 self.eat(Class.SEMICOLON)
         self.eat(Class.RPAREN)
-        params = Params(params)
+        if len(params) == 0:
+            params = None
+        else :
+            params = Params(params)
         return [id_, params]
 
     def func_proc_implementation(self):
@@ -809,6 +816,11 @@ class Parser:
             self.eat(Class.OR)
             second = self.compare()
             return BinOp(op, first, second)
+        elif self.curr.class_ == Class.XOR:
+            op = self.curr.lexeme
+            self.eat(Class.XOR)
+            second = self.compare()
+            return BinOp(op, first, second)
         else:
             return first
 
@@ -887,7 +899,8 @@ class Grapher(Visitor):
     def visit_Procedure(self, parent, node):
         self.add_node(parent, node)
         self.visit(node, node.id_)
-        self.visit(node, node.params)
+        if node.params is not None:
+            self.visit(node, node.params)
         if node.variables is not None:
             self.visit(node, node.variables)
         self.visit(node, node.block)
@@ -936,7 +949,8 @@ class Grapher(Visitor):
     def visit_Function(self, parent, node):
         self.add_node(parent, node)
         self.visit(node, node.id_)
-        self.visit(node, node.params)
+        if node.params is not None:
+            self.visit(node, node.params)
         self.visit(node, node.type_)
         if node.variables is not None:
             self.visit(node, node.variables)
@@ -1013,8 +1027,8 @@ class Grapher(Visitor):
         return s.view()
 
 
-test_id = 3
-path = f'test\\test{test_id}.pas'
+test_id = 11
+path = f'test/test{test_id}.pas'
 
 with open(path, 'r') as source:
     text = source.read()
