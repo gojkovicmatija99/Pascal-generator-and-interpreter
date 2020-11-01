@@ -10,7 +10,7 @@
 <begin_block_end> =>				'begin' <block> 'end'
 <block> =>							( <if_statement> | <while_statement> | <for_statement> | <repeat_statement> | 'break'' | 'continue' | 'exit' | <expression> | <function_call> )*
 
-<function_call> =>					<identifier> '(' <arguments> ')' 
+<func_proc_call> =>					<identifier> '(' <arguments> ')'
 <arguments> =>						( <expression> )? ( ',' <expression> )*
 
 <for_statement> => 					'for' <expression> 'to' <expression> 'do' <begin_block_end> ';'
@@ -23,10 +23,11 @@
 
 <expression> => 					<term> ( ( '+' | '-' ) <term> )*
 <term> => 							<fact> ( ( '*' | 'div' | 'mod' ) <fact> )*
-<fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <function_caVariablesll> | '(' <expression> ')' )
+<fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <func_proc_call> | '(' <expression> ')' )
 
-<type> => 							<simple_type> | <array_type> 
-<simple_type> => 					'integer' | 'char' | 'string' | 'real' | 'boolean'
+<type> => 							<simple_type> | <array_type> | <string>
+<simple_type> => 					'integer' | 'char' | 'real' | 'boolean'
+<string_type> =>                    'string' ( '[' <integer_constant> ']' )?
 <array_type> =>						'array' '[' <integer_constant> '.' '.' <integer_constant> ']' 'of' <simple_type> <array_element_declaration>?
 <array_element_declaration> =>		'=' '(' <integer_constant> ( ',' <integer_constant> )* ')	 	 
 

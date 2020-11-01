@@ -1,4 +1,4 @@
-from modules.classes import Class
+from modules.enums import Class
 
 
 class Token:

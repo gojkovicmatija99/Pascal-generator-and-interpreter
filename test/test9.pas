@@ -1,6 +1,6 @@
 procedure draw(n, m: integer);
 var
-	i: integer;
+	i: string;
 begin
 	if n = 0 then
 	begin

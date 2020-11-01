@@ -1,7 +1,7 @@
 import pickle
 from functools import wraps
 
-from modules.classes import Class
+from modules.enums import Class
 
 
 class Node:
@@ -155,6 +155,11 @@ class String(Node):
         self.value = value
 
 
+class ShortString(Node):
+    def __init__(self, value):
+        self.value = value
+
+
 class Id(Node):
     def __init__(self, value):
         self.value = value
@@ -211,7 +216,6 @@ class Parser:
         self.eat(Class.DOT)
         return Program(nodes)
 
-
     def procedure_declaration(self):
         self.eat(Class.PROCEDURE)
         id_params = self.func_proc_header()
@@ -228,7 +232,6 @@ class Parser:
         vars_block = self.func_proc_implementation()
         return Func(id_params[0], id_params[1], type_, vars_block[0], vars_block[1])
 
-
     def func_proc_header(self):
         id_ = Id(self.curr.lexeme)
         self.eat(Class.ID)
@@ -241,7 +244,7 @@ class Parser:
         self.eat(Class.RPAREN)
         if len(params) == 0:
             params = None
-        else :
+        else:
             params = Params(params)
         return [id_, params]
 
@@ -402,8 +405,21 @@ class Parser:
     def type_(self):
         if self.curr.class_ == Class.ARRAY:
             return self.array_type()
+        elif self.curr.lexeme == "string":
+            return self.string_type()
         else:
             return self.simple_type()
+
+    def string_type(self):
+        self.eat(Class.TYPE)
+        if self.curr.class_ == Class.LBRACKET:
+            self.eat(Class.LBRACKET)
+            len = self.curr.lexeme
+            self.eat(Class.INT)
+            self.eat(Class.RBRACKET)
+            return ShortString(len)
+        else:
+            return Type("string")
 
     def array_type(self):
         self.eat(Class.ARRAY)
