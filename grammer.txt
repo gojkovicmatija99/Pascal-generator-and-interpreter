@@ -6,7 +6,7 @@
 <func_proc_header> =>				<identifier> '(' ( <variable_declaration> ';' )* ')'
 <func_proc_implementation> =>		<variable_declaration_part>? <begin_block_end> ';'	
 <variable_declaration_part> =>		'var' (<variable declaration> ';')*
-<variable_declaration> => 			<identifier> ( ',' <identifier> )* ':' <type>
+<variable_declaration> => 			<identifier> ( ',' <identifier> )* ':' ( <type> | <array_type> )
 <begin_block_end> =>				'begin' <block> 'end'
 <block> =>							( <if_statement> | <while_statement> | <for_statement> | <repeat_statement> | 'break'' | 'continue' | 'exit' | <expression> | <function_call> )*
 
@@ -25,7 +25,7 @@
 <term> => 							<fact> ( ( '*' | 'div' | 'mod' ) <fact> )*
 <fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <func_proc_call> | '(' <expression> ')' )
 
-<type> => 							<simple_type> | <array_type> | <string>
+<type> => 							<simple_type>  | <string>
 <simple_type> => 					'integer' | 'char' | 'real' | 'boolean'
 <string_type> =>                    'string' ( '[' <integer_constant> ']' )?
 <array_type> =>						'array' '[' <integer_constant> '.' '.' <integer_constant> ']' 'of' <simple_type> <array_element_declaration>?

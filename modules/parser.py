@@ -25,7 +25,8 @@ class Var(Node):
 
 
 class ArrayDecl(Node):
-    def __init__(self, type_, start_index, end_index, elems):
+    def __init__(self, id_, type_, start_index, end_index, elems):
+        self.id_ = id_
         self.type_ = type_
         self.start_index = start_index
         self.end_index = end_index
@@ -272,10 +273,17 @@ class Parser:
             self.eat(Class.COMMA)
             ids.append(self.identifier())
         self.eat(Class.COLON)
-        data_type = self.type_()
-        for id_ in ids:
-            data_type_id.append(Decl(data_type, id_))
-        return data_type_id
+        if self.curr.class_ == Class.ARRAY:
+            data_type = self.array_type()
+            for id_ in ids:
+                data_type.id_ = id_
+                data_type_id.append(data_type)
+            return data_type_id
+        else:
+            data_type = self.type_()
+            for id_ in ids:
+                data_type_id.append(Decl(data_type, id_))
+            return data_type_id
 
     def identifier(self):
         is_array_elem = self.prev.class_ != Class.TYPE
@@ -403,9 +411,7 @@ class Parser:
         return Continue()
 
     def type_(self):
-        if self.curr.class_ == Class.ARRAY:
-            return self.array_type()
-        elif self.curr.lexeme == "string":
+        if self.curr.lexeme == "string":
             return self.string_type()
         else:
             return self.simple_type()
@@ -436,7 +442,7 @@ class Parser:
         elems = None
         if self.curr.class_ == Class.EQ:
             elems = self.array_element_declaration()
-        return ArrayDecl(type_, start_index, end_index, elems)
+        return ArrayDecl(None, type_, start_index, end_index, elems)
 
     def array_element_declaration(self):
         self.eat(Class.EQ)

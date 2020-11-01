@@ -61,6 +61,7 @@ class Grapher(Visitor):
 
     def visit_ArrayDecl(self, parent, node):
         self.add_node(parent, node)
+        self.visit(node, node.id_)
         self.visit(node, node.type_)
         self.visit(node, node.start_index)
         self.visit(node, node.end_index)
