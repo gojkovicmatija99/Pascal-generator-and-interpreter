@@ -18,12 +18,12 @@
 <while_statement> =>				'while' <logic_expression> 'do' <begin_block_end> ';'
 <repeat_statement> =>				'repeat' <block> 'until' <logic_expression> ';'
 				
-<logic_expression> 					<compare> ( ( 'and' | 'or' ) <compare> )?
+<logic_expression> 					<compare> ( ( 'and' | 'or' | 'xor' ) <compare> )?
 <compare> =>						<expression> ( '==' | '!=' | '<' | '>' | '<=' | '>=' ) <expression>		
 
 <expression> => 					<term> ( ( '+' | '-' ) <term> )*
 <term> => 							<fact> ( ( '*' | 'div' | 'mod' ) <fact> )*
-<fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <function_call> | '(' <expression> ')' )
+<fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <function_caVariablesll> | '(' <expression> ')' )
 
 <type> => 							<simple_type> | <array_type> 
 <simple_type> => 					'integer' | 'char' | 'string' | 'real' | 'boolean'

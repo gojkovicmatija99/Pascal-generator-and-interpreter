@@ -1,5 +1,5 @@
 var
-	asd, efg: array [1..5] of string;
+	asd, efg: string[50];
 	len: integer;
 
 begin

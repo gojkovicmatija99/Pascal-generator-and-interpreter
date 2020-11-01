@@ -1,4 +1,3 @@
-
 var
 	a: char;
 	bcd, ef: integer;
