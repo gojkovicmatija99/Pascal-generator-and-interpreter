@@ -448,21 +448,14 @@ class Parser:
         self.eat(Class.EQ)
         self.eat(Class.LPAREN)
         elems = []
-        elems.append(Int(self.curr.lexeme))
-        self.eat(Class.INT)
+        elems.append(self.constant())
         while self.curr.class_ == Class.COMMA:
             self.eat(Class.COMMA)
-            elems.append(Int(self.curr.lexeme))
-            self.eat(Class.INT)
+            elems.append(self.constant())
         self.eat(Class.RPAREN)
         return Elems(elems)
 
-    def simple_type(self):
-        type_ = Type(self.curr.lexeme)
-        self.eat(Class.TYPE)
-        return type_
-
-    def factor(self):
+    def constant(self):
         if self.curr.class_ == Class.INT:
             value = Int(self.curr.lexeme)
             self.eat(Class.INT)
@@ -483,6 +476,15 @@ class Parser:
             value = Real(self.curr.lexeme)
             self.eat(Class.REAL)
             return value
+
+    def simple_type(self):
+        type_ = Type(self.curr.lexeme)
+        self.eat(Class.TYPE)
+        return type_
+
+    def factor(self):
+        if self.curr.class_ in [Class.INT, Class.CHAR, Class.STRING, Class.BOOLEAN, Class.REAL]:
+            return self.constant()
         elif self.curr.class_ == Class.ID:
             return self.identifier()
         elif self.curr.class_ in [Class.MINUS, Class.NOT]:

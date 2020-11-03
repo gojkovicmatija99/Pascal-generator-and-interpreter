@@ -23,16 +23,20 @@
 
 <expression> => 					<term> ( ( '+' | '-' ) <term> )*
 <term> => 							<fact> ( ( '*' | 'div' | 'mod' ) <fact> )*
-<fact> => 							( '-' | 'not')? ( <identifier> | <array_element> | <func_proc_call> | '(' <expression> ')' )
+<fact> => 							( '-' | 'not')? ( <constant> | <identifier> | <array_element> | <func_proc_call> | '(' <expression> ')' )
 
 <type> => 							<simple_type>  | <string>
 <simple_type> => 					'integer' | 'char' | 'real' | 'boolean'
 <string_type> =>                    'string' ( '[' <integer_constant> ']' )?
 <array_type> =>						'array' '[' <integer_constant> '.' '.' <integer_constant> ']' 'of' <simple_type> <array_element_declaration>?
-<array_element_declaration> =>		'=' '(' <integer_constant> ( ',' <integer_constant> )* ')	 	 
-
+<array_element_declaration> =>		'=' '(' <constant> ( ',' <constant> )* ')
 <array_element> => 					<identifier> ( '[' <expression> ']' )+
-<identifier> =>						<letter> ( <letter> | <digit> )*
-<integer_constant> =>				<digit> <digit>*
 
+<identifier> =>						<letter> ( <letter> | <digit> )*
+<constant> =>                       <integer_constant> | <char_constant> | <real_constant> | <boolean_constant> | <string_constant>
+<integer_constant> =>				<digit> <digit>*
+<char_constant> =>                  <letter>
+<real_constant> =>                  <integer_constant> . <integer_constant>
+<boolean_constant> =>               'true' | 'false'
+<string_constant> =>                ''' ( <letter> | <digit> )* '''
 
