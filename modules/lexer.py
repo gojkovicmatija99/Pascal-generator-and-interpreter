@@ -98,6 +98,10 @@ class Lexer:
             return Token(Class.NOT, lexeme)
         elif lexeme == 'xor':
             return Token(Class.XOR, lexeme)
+        elif lexeme == 'true':
+            return Token(Class.BOOLEAN, lexeme)
+        elif lexeme == 'false':
+            return Token(Class.BOOLEAN, lexeme)
         elif lexeme == 'integer' or lexeme == 'char' or lexeme == 'string' or lexeme == 'real' or lexeme == 'boolean':
             return Token(Class.TYPE, lexeme)
         return Token(Class.ID, lexeme)
@@ -117,7 +121,19 @@ class Lexer:
         if curr.isalpha():
             token = self.read_keyword()
         elif curr.isdigit():
-            token = Token(Class.INT, self.read_int())
+          firstInt = self.read_int()
+          curr = self.next_char()
+          if curr == '.':
+            curr = self.next_char()
+            if curr.isdigit():
+                secondInt = self.read_int()
+                token = Token(Class.REAL, f'{firstInt}.{secondInt}')
+            else:
+                self.pos -= 2
+                token = Token(Class.INT, firstInt)
+          else:
+            self.pos -= 1
+            token = Token(Class.INT, firstInt)
         elif curr == '\'':
             if self.is_only_one_char():
                 token = Token(Class.CHAR, self.read_char())

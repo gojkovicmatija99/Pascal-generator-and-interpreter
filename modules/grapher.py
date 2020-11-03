@@ -161,6 +161,14 @@ class Grapher(Visitor):
         name = node.value
         self.add_node(parent, node, name)
 
+    def visit_Real(self, parent, node):
+        name = node.value
+        self.add_node(parent, node, name)
+
+    def visit_Boolean(self, parent, node):
+        name = node.value
+        self.add_node(parent, node, name)
+
     def visit_ShortString(self, parent, node):
         name = node.value
         self.add_node(parent, node, name)
