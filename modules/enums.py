@@ -7,6 +7,7 @@ class Class(Enum):
     STAR = auto()
     DIV = auto()
     MOD = auto()
+    FWDSLASH = auto()
 
     OR = auto()
     AND = auto()

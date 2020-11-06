@@ -145,6 +145,8 @@ class Lexer:
             token = Token(Class.MINUS, curr)
         elif curr == '*':
             token = Token(Class.STAR, curr)
+        elif curr == '/':
+            token = Token(Class.FWDSLASH, curr)
         elif curr == '.':
             token = Token(Class.DOT, curr)
         elif curr == '=':
@@ -155,6 +157,7 @@ class Lexer:
                 token = Token(Class.ASSIGN, ':=')
             else:
                 token = Token(Class.COLON, ':')
+                self.pos -= 1
         elif curr == '<':
             curr = self.next_char()
             if curr == '=':

@@ -510,7 +510,7 @@ class Parser:
 
     def term(self):
         first = self.factor()
-        while self.curr.class_ in [Class.STAR, Class.DIV, Class.MOD]:
+        while self.curr.class_ in [Class.STAR, Class.DIV, Class.MOD, Class.FWDSLASH]:
             if self.curr.class_ == Class.STAR:
                 op = self.curr.lexeme
                 self.eat(Class.STAR)
@@ -524,6 +524,11 @@ class Parser:
             elif self.curr.class_ == Class.MOD:
                 op = self.curr.lexeme
                 self.eat(Class.MOD)
+                second = self.factor()
+                first = BinOp(op, first, second)
+            if self.curr.class_ == Class.FWDSLASH:
+                op = self.curr.lexeme
+                self.eat(Class.FWDSLASH)
                 second = self.factor()
                 first = BinOp(op, first, second)
         return first

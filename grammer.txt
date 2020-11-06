@@ -39,4 +39,3 @@
  real_constant  =>                  integer_constant  .  integer_constant
  boolean_constant  =>               'true' | 'false'
  string_constant  =>                ''' (  letter  |  digit  )* '''
-
