@@ -583,25 +583,28 @@ class Parser:
         else:
             return first
 
-    def logic_expression(self):
+    def logic_term(self):
         first = self.compare()
-        if self.curr.class_ == Class.AND:
+        while self.curr.class_ == Class.AND:
             op = self.curr.lexeme
             self.eat(Class.AND)
             second = self.compare()
-            return BinOp(op, first, second)
-        elif self.curr.class_ == Class.OR:
-            op = self.curr.lexeme
-            self.eat(Class.OR)
-            second = self.compare()
-            return BinOp(op, first, second)
-        elif self.curr.class_ == Class.XOR:
+            first = BinOp(op, first, second)
+        while self.curr.class_ == Class.XOR:
             op = self.curr.lexeme
             self.eat(Class.XOR)
             second = self.compare()
-            return BinOp(op, first, second)
-        else:
-            return first
+            first = BinOp(op, first, second)
+        return first
+
+    def logic_expression(self):
+        first = self.logic_term()
+        while self.curr.class_ == Class.OR:
+            op = self.curr.lexeme
+            self.eat(Class.OR)
+            second = self.logic_term()
+            first = BinOp(op, first, second)
+        return first
 
     @restorable
     def is_func_proc_call(self):

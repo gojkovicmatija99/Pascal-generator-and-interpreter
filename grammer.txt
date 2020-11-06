@@ -18,7 +18,8 @@
  while_statement  => 		        'while'  logic_expression  'do'  begin_block_end  ';'
  repeat_statement  => 		        'repeat'  block  'until'  logic_expression  ';'
 
- logic_expression => 				compare  ( ( 'and' | 'or' | 'xor' )  compare  )?
+ logic_expression => 				logic_term  ( ( 'or' )  logic_term )*
+ logic_term =>                      compare ( ( 'and' | 'xor' ) compare ) *
  compare  => 						expression  ( '==' | '!=' | '<' | '>' | '<=' | '>=' | '<>' )  expression
 
  expression  =>  					term  ( ( '+' | '-' )  term  )*
