@@ -1,12 +1,12 @@
 import os
-from IPython.display import Image
 
+from modules.generator import Generator
 from modules.lexer import Lexer
 from modules.parser import Parser
 from modules.grapher import Grapher
 
 cd = os.path.sep
-test_id = 5
+test_id = 1
 path = f'test{cd}test{test_id}.pas'
 
 with open(path, 'r') as source:
@@ -18,7 +18,8 @@ with open(path, 'r') as source:
     parser = Parser(tokens)
     ast = parser.parse()
 
-    grapher = Grapher(ast)
-    img = grapher.graph()
+    # grapher = Grapher(ast)
+    # img = grapher.graph()
 
-Image(img)
+    generator = Generator(ast)
+    code = generator.generate('main.c')
