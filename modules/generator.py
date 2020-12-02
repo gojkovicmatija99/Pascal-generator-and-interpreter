@@ -14,7 +14,7 @@ class Generator(Visitor):
         self.py += str(text)
 
     def newline(self):
-        self.append('\n\r')
+        self.append('\n')
 
     def indent(self):
         for i in range(self.level):
@@ -54,9 +54,12 @@ class Generator(Visitor):
         func = node.id_.value
         args = node.args.args
         if func == 'writeln':
-            self.append('printf(')
-            self.visit(node, node.args)
-            self.append(')')
+            self.append('printf')
+        else:
+            self.append(func)
+        self.append('(')
+        self.visit(node, node.args)
+        self.append(')')
 
     def visit_Args(self, parent, node):
         for i, a in enumerate(node.args):
@@ -78,9 +81,9 @@ class Generator(Visitor):
         self.append(node.value)
 
     def visit_BinOp(self, parent, node):
-        #self.visit(node.first)
-        self.append(node.symbol)
-        #self.visit(node.second)
+        self.visit(node, node.first)
+        self.append(" " + node.symbol + " ")
+        self.visit(node, node.second)
 
     def visit_Var(self, parent, node):
         for n in node.nodes:
