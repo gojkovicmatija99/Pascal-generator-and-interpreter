@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block
+from modules.parser import Program, Var, Block, String
 
 
 class Generator(Visitor):
@@ -21,20 +21,28 @@ class Generator(Visitor):
             self.append('\t')
 
     def open_scope(self):
-        self.append(" {")
+        self.indent()
+        self.append("{")
         self.newline()
         self.level += 1
 
     def close_scope(self):
         self.level -= 1
-        self.append(" }")
+        self.indent()
+        self.append("}")
+        self.newline()
+
+    def libs(self):
+        self.append("#include<stdio.h>")
         self.newline()
 
     def visit_Program(self, parent, node):
+        self.libs()
         is_in_main = True
         for n in node.nodes:
             if is_in_main and (type(n) is Var or type(n) is Block):
                 self.append("int main()")
+                self.newline()
                 self.open_scope()
                 is_in_main = False
             self.visit(node, n)
@@ -47,19 +55,23 @@ class Generator(Visitor):
         for n in node.nodes:
             self.indent()
             self.visit(node, n)
-            self.append(";")
             self.newline()
 
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
-        args = node.args.args
-        if func == 'writeln':
+        if func == 'writeln' or func == 'write':
             self.append('printf')
+            self.append('(')
+        elif func == 'read' or func == 'readln':
+            self.append('scanf')
+            self.append('(')
+            self.append('" ", ')
         else:
             self.append(func)
-        self.append('(')
+            self.append('(')
         self.visit(node, node.args)
         self.append(')')
+        self.append("; ")
 
     def visit_Args(self, parent, node):
         for i, a in enumerate(node.args):
@@ -101,6 +113,7 @@ class Generator(Visitor):
         self.visit(node, node.id_)
         self.append(" = ")
         self.visit(node, node.expr)
+        self.append("; ")
 
     def visit_Type(self, parent, node):
         if node.value == "integer":
@@ -110,6 +123,23 @@ class Generator(Visitor):
 
     def visit_Id(self, parent, node):
         self.append(node.value)
+
+    def visit_For(self, parent, node):
+
+        self.append("for")
+        self.append("(")
+        self.visit(node, node.start)
+        self.visit(node.start, node.start.id_)
+        self.append(" <= ")
+        self.visit(node, node.end)
+        self.append("; ")
+        self.visit(node.start, node.start.id_)
+        self.append("++")
+        self.append(")")
+        self.newline()
+        self.open_scope()
+        self.visit(node, node.block)
+        self.close_scope()
 
     def generate(self, path):
         self.visit(None, self.ast)
