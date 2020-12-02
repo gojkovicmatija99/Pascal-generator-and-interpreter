@@ -62,14 +62,30 @@ class Generator(Visitor):
         if func == 'writeln' or func == 'write':
             self.append('printf')
             self.append('(')
+            printString = ""
+            for arg in node.args.args:
+                if type(arg) is String:
+                    printString += arg.value
+                else:
+                    printString += " %d "
+            self.append('"')
+            self.append(printString)
+            if func == 'writeln':
+                self.append("\\n")
+            self.append('"')
+            for i, arg in enumerate(node.args.args):
+                if type(arg) is not String:
+                    if i > 0:
+                        self.append(', ')
+                    self.visit(node.args, arg)
         elif func == 'read' or func == 'readln':
             self.append('scanf')
             self.append('(')
-            self.append('" ", ')
+            self.append('"%d", &')
+            self.visit(node, node.args)
         else:
             self.append(func)
             self.append('(')
-        self.visit(node, node.args)
         self.append(')')
         self.append("; ")
 
