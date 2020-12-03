@@ -110,7 +110,10 @@ class Generator(Visitor):
 
     def visit_BinOp(self, parent, node):
         self.visit(node, node.first)
-        self.append(" " + node.symbol + " ")
+        if node.symbol == '=':
+            self.append(' ' + '==' + ' ')
+        else:
+            self.append(' ' + node.symbol + ' ')
         self.visit(node, node.second)
 
     def visit_Var(self, parent, node):
@@ -141,7 +144,6 @@ class Generator(Visitor):
         self.append(node.value)
 
     def visit_For(self, parent, node):
-
         self.append("for")
         self.append("(")
         self.visit(node, node.start)
@@ -156,6 +158,22 @@ class Generator(Visitor):
         self.open_scope()
         self.visit(node, node.block)
         self.close_scope()
+
+    def visit_If(self, parent, node):
+        self.append("if( ")
+        self.visit(node, node.cond)
+        self.append(" )")
+        self.newline()
+        self.open_scope()
+        self.visit(node, node.true)
+        self.close_scope()
+        if node.false is not None:
+            self.indent()
+            self.append('else')
+            self.newline()
+            self.open_scope()
+            self.visit(node, node.false)
+            self.close_scope()
 
     def generate(self, path):
         self.visit(None, self.ast)
