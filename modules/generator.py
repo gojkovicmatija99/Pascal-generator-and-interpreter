@@ -86,6 +86,7 @@ class Generator(Visitor):
         else:
             self.append(func)
             self.append('(')
+            self.visit(node, node.args)
         self.append(')')
         self.append("; ")
 
@@ -112,6 +113,14 @@ class Generator(Visitor):
         self.visit(node, node.first)
         if node.symbol == '=':
             self.append(' ' + '==' + ' ')
+        elif node.symbol == 'mod':
+            self.append(" % ")
+        elif node.symbol == 'div':
+            self.append(" / ")
+        elif node.symbol == 'and':
+            self.append(" && ")
+        elif node.symbol == 'or':
+            self.append(" || ")
         else:
             self.append(' ' + node.symbol + ' ')
         self.visit(node, node.second)
@@ -174,6 +183,31 @@ class Generator(Visitor):
             self.open_scope()
             self.visit(node, node.false)
             self.close_scope()
+
+    def visit_Proc(self, parent, node):
+        self.append("void ")
+        self.visit(node, node.id_)
+        self.append("(")
+        if node.params is not None:
+            self.visit(node, node.params)
+        self.append(")")
+        self.newline()
+        self.open_scope()
+        if node.variables is not None:
+            self.visit(node, node.variables)
+        self.visit(node, node.block)
+        self.close_scope()
+
+    def visit_Params(self, parent, node):
+        for i, p in enumerate(node.params):
+            if i > 0:
+                self.append(', ')
+            self.visit(p, p.type_)
+            self.append(" ")
+            self.visit(p, p.id_)
+
+    def visit_Exit(self, parent, node):
+        self.append("return;")
 
     def generate(self, path):
         self.visit(None, self.ast)
