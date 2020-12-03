@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String, Char, ArrayElem
+from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp
 
 
 class Generator(Visitor):
@@ -80,6 +80,8 @@ class Generator(Visitor):
                 else:
                     if type(arg) is ArrayElem:
                         curr_var_type = self.var_type[arg.id_.value]
+                    elif type(arg) is BinOp:
+                        curr_var_type = "integer"
                     else:
                         curr_var_type = self.var_type[arg.value]
                     printString += self.get_format(curr_var_type)
