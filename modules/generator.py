@@ -60,13 +60,13 @@ class Generator(Visitor):
 
     def get_format(self, curr_var_type):
         if curr_var_type == 'integer':
-            return " %d "
+            return "%d"
         if curr_var_type == 'char':
-            return " %c "
+            return "%c"
         if curr_var_type == 'string':
-            return " %s "
+            return "%s"
         if curr_var_type == 'real':
-            return " %f "
+            return "%f"
 
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
@@ -158,6 +158,7 @@ class Generator(Visitor):
             self.newline()
             self.indent()
             self.visit(node, n)
+            self.append(";")
         self.newline()
 
     def visit_Decl(self, parent, node):
@@ -165,7 +166,7 @@ class Generator(Visitor):
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
-        self.append(";")
+
 
     def visit_Assign(self, parent, node):
         self.visit(node, node.id_)
@@ -201,9 +202,9 @@ class Generator(Visitor):
         self.close_scope()
 
     def visit_If(self, parent, node):
-        self.append("if( ")
+        self.append("if(")
         self.visit(node, node.cond)
-        self.append(" )")
+        self.append(")")
         self.newline()
         self.open_scope()
         self.visit(node, node.true)
@@ -221,13 +222,45 @@ class Generator(Visitor):
         self.visit(node, node.id_)
         self.append("(")
         if node.params is not None:
-            self.visit(node, node.params)
+            for i, param in enumerate(node.params.params):
+                if i > 0:
+                    self.append(", ")
+                self.visit(node.params, param)
         self.append(")")
         self.newline()
         self.open_scope()
         if node.variables is not None:
             self.visit(node, node.variables)
         self.visit(node, node.block)
+        self.close_scope()
+
+    def visit_Func(self, parent, node):
+        self.visit(node, node.type_)
+        self.append(" ")
+        self.visit(node, node.id_)
+        self.append("(")
+        if node.params is not None:
+            for i, param in enumerate(node.params.params):
+                if i > 0:
+                    self.append(", ")
+                self.visit(node.params, param)
+        self.append(")")
+        self.newline()
+        self.open_scope()
+        if node.variables is not None:
+            self.visit(node, node.variables)
+        self.indent()
+        self.visit(node, node.type_)
+        self.append(" ")
+        self.visit(node, node.id_)
+        self.append(";")
+        self.newline()
+        self.visit(node, node.block)
+        self.indent()
+        self.append("return ")
+        self.visit(node, node.id_)
+        self.append(";")
+        self.newline()
         self.close_scope()
 
     def visit_Params(self, parent, node):
@@ -253,10 +286,19 @@ class Generator(Visitor):
         self.append(" ")
         self.visit(node, node.id_)
         self.append("[")
-        maxElems = node.end_index.value - node.start_index.value + 2
+        maxElems = node.end_index.value - node.start_index.value + 1
         self.append(str(maxElems))
         self.append("]")
-        self.append(";")
+        if node.elems is not None:
+            self.visit(node, node.elems)
+
+    def visit_Elems(self, parent, node):
+        self.append(" = {")
+        for i, elem in enumerate(node.elems):
+            if i > 0:
+                self.append(", ")
+            self.visit(node, elem)
+        self.append("}")
 
     def generate(self, path):
         self.visit(None, self.ast)
