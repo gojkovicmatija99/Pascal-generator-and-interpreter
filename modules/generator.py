@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String, Char
+from modules.parser import Program, Var, Block, String, Char, ArrayElem
 
 
 class Generator(Visitor):
@@ -9,6 +9,7 @@ class Generator(Visitor):
         self.ast = ast
         self.py = ""
         self.level = 0
+        self.var_type = {}
 
     def append(self, text):
         self.py += str(text)
@@ -57,6 +58,16 @@ class Generator(Visitor):
             self.visit(node, n)
             self.newline()
 
+    def get_format(self, curr_var_type):
+        if curr_var_type == 'integer':
+            return " %d "
+        if curr_var_type == 'char':
+            return " %c "
+        if curr_var_type == 'string':
+            return " %s "
+        if curr_var_type == 'real':
+            return " %f "
+
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
         if func == 'writeln' or func == 'write':
@@ -67,7 +78,12 @@ class Generator(Visitor):
                 if type(arg) is String or type(arg) is Char:
                     printString += arg.value
                 else:
-                    printString += " %d "
+                    if type(arg) is ArrayElem:
+                        curr_var_type = self.var_type[arg.id_.value]
+                    else:
+                        curr_var_type = self.var_type[arg.value]
+                    printString += self.get_format(curr_var_type)
+
             self.append('"')
             self.append(printString)
             if func == 'writeln':
@@ -77,17 +93,30 @@ class Generator(Visitor):
                 if type(arg) is not String and type(arg) is not Char:
                     self.append(', ')
                     self.visit(node.args, arg)
+            self.append(')')
+            self.append("; ")
         elif func == 'read' or func == 'readln':
-            self.append('scanf')
-            self.append('(')
-            self.append('"%d", &')
-            self.visit(node, node.args)
+            for arg in node.args.args:
+                self.append('scanf')
+                self.append('(')
+                self.append('"')
+                if type(arg) is ArrayElem:
+                    curr_var_type = self.var_type[arg.id_.value]
+                else:
+                    curr_var_type = self.var_type[arg.value]
+                self.append(self.get_format(curr_var_type))
+                self.append('", &')
+                self.visit(node.args, arg)
+                self.append(')')
+                self.append("; ")
+                self.newline()
+                self.indent()
         else:
             self.append(func)
             self.append('(')
             self.visit(node, node.args)
-        self.append(')')
-        self.append("; ")
+            self.append(')')
+            self.append("; ")
 
     def visit_Args(self, parent, node):
         for i, a in enumerate(node.args):
@@ -132,6 +161,7 @@ class Generator(Visitor):
         self.newline()
 
     def visit_Decl(self, parent, node):
+        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
@@ -146,6 +176,8 @@ class Generator(Visitor):
     def visit_Type(self, parent, node):
         if node.value == "integer":
             self.append("int")
+        elif node.value == "real":
+            self.append("float")
         else:
             self.append(node.value)
 
@@ -216,6 +248,7 @@ class Generator(Visitor):
         self.append(']')
 
     def visit_ArrayDecl(self, parent, node):
+        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
