@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String
+from modules.parser import Program, Var, Block, String, Char
 
 
 class Generator(Visitor):
@@ -64,7 +64,7 @@ class Generator(Visitor):
             self.append('(')
             printString = ""
             for arg in node.args.args:
-                if type(arg) is String:
+                if type(arg) is String or type(arg) is Char:
                     printString += arg.value
                 else:
                     printString += " %d "
@@ -73,10 +73,9 @@ class Generator(Visitor):
             if func == 'writeln':
                 self.append("\\n")
             self.append('"')
-            for i, arg in enumerate(node.args.args):
-                if type(arg) is not String:
-                    if i > 0:
-                        self.append(', ')
+            for arg in node.args.args:
+                if type(arg) is not String and type(arg) is not Char:
+                    self.append(', ')
                     self.visit(node.args, arg)
         elif func == 'read' or func == 'readln':
             self.append('scanf')
@@ -127,15 +126,16 @@ class Generator(Visitor):
 
     def visit_Var(self, parent, node):
         for n in node.nodes:
+            self.newline()
+            self.indent()
             self.visit(node, n)
+        self.newline()
 
     def visit_Decl(self, parent, node):
-        self.indent()
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
         self.append(";")
-        self.newline()
 
     def visit_Assign(self, parent, node):
         self.visit(node, node.id_)
@@ -208,6 +208,22 @@ class Generator(Visitor):
 
     def visit_Exit(self, parent, node):
         self.append("return;")
+
+    def visit_ArrayElem(self, parent, node):
+        self.visit(node, node.id_)
+        self.append('[')
+        self.visit(node, node.index)
+        self.append(']')
+
+    def visit_ArrayDecl(self, parent, node):
+        self.visit(node, node.type_)
+        self.append(" ")
+        self.visit(node, node.id_)
+        self.append("[")
+        maxElems = node.end_index.value - node.start_index.value + 2
+        self.append(str(maxElems))
+        self.append("]")
+        self.append(";")
 
     def generate(self, path):
         self.visit(None, self.ast)
