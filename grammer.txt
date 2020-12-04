@@ -25,6 +25,7 @@
  expression  =>  					term  ( ( '+' | '-' )  term  )*
  term  =>  							fact  ( ( '*' | 'div' | 'mod' )  fact  )*
  fact  =>  							( '-' | 'not')? (  constant  |  identifier  |  array_element  |  func_proc_call  | '('  expression  ')' )
+ assign =>                          identifier '=' ( expressions | login_expression ) ';'
 
  type  =>                           simple_type   |  string
  simple_type  =>                    'integer' | 'char' | 'real' | 'boolean'

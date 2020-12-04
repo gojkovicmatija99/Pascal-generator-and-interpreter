@@ -301,7 +301,11 @@ class Parser:
             id_ = ArrayElem(id_, index)
         if self.curr.class_ == Class.ASSIGN:
             self.eat(Class.ASSIGN)
-            expr = self.expression()
+            expr = self.is_expression()
+            if expr is not False:
+                expr = self.logic_expression()
+            elif expr is not False:
+                expr = None
             return Assign(id_, expr)
         else:
             return id_
@@ -613,6 +617,20 @@ class Parser:
             self.args()
             self.eat(Class.RPAREN)
             return self.curr.class_ != Class.BEGIN
+        except:
+            return False
+
+    @restorable
+    def is_logic_expression(self):
+        try:
+            return self.logic_expression()
+        except:
+            return False
+
+    @restorable
+    def is_expression(self):
+        try:
+            return self.expression()
         except:
             return False
 

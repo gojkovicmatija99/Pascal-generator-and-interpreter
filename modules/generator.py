@@ -59,7 +59,7 @@ class Generator(Visitor):
             self.newline()
 
     def get_format(self, curr_var_type):
-        if curr_var_type == 'integer':
+        if curr_var_type == 'integer' or  curr_var_type == 'boolean':
             return "%d"
         if curr_var_type == 'char':
             return "%c"
@@ -177,10 +177,10 @@ class Generator(Visitor):
         self.append("; ")
 
     def visit_Type(self, parent, node):
-        if node.value == "integer":
-            self.append("int")
-        elif node.value == "real":
-            self.append("float")
+        if node.value == 'integer' or node.value =='boolean':
+            self.append('int')
+        elif node.value == 'real':
+            self.append('float')
         else:
             self.append(node.value)
 
