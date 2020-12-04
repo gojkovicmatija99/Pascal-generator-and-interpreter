@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp, FuncProcCall, If, For, Repeat
+from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp, FuncProcCall, If, For, Repeat, While
 
 
 class Generator(Visitor):
@@ -60,6 +60,8 @@ class Generator(Visitor):
         if type(node) is For:
             return True
         if type(node) is Repeat:
+            return True
+        if type(node) is While:
             return True
         return False
 
@@ -130,6 +132,13 @@ class Generator(Visitor):
                     self.indent()
         elif func == 'ord' or func == 'chr':
             self.visit(node, node.args)
+        elif func == 'length':
+            self.append("strlen(")
+            self.visit(node, node.args)
+            self.append(")")
+        elif func == 'inc':
+            self.visit(node, node.args)
+            self.append("++")
         else:
             self.append(func)
             self.append('(')
@@ -173,6 +182,8 @@ class Generator(Visitor):
             self.append(" && ")
         elif node.symbol == 'or':
             self.append(" || ")
+        elif node.symbol == '<>':
+            self.append(" != ")
         else:
             self.append(' ' + node.symbol + ' ')
         self.visit(node, node.second)
@@ -348,6 +359,14 @@ class Generator(Visitor):
         self.append("while(!(")
         self.visit(node, node.cond)
         self.append("));")
+
+    def visit_While(self, parent, node):
+        self.append("while(")
+        self.visit(node, node.cond)
+        self.append(")")
+        self.open_scope()
+        self.visit(node, node.block)
+        self.close_scope()
 
     def visit_Boolean(self, parent, node):
         if node.value == 'true':

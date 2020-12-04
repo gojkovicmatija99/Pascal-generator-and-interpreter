@@ -6,8 +6,8 @@ from modules.parser import Parser
 from modules.grapher import Grapher
 
 cd = os.path.sep
-test_id = 10
-path = f'main.pas'
+test_id = '15'
+path = f'debug{cd}{test_id}{cd}src.pas'
 
 with open(path, 'r') as source:
     text = source.read()

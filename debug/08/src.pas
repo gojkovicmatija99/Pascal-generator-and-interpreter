@@ -1,7 +1,7 @@
 function jeProst(n: integer): boolean;
 	var
 		i: integer;
-
+	
 	begin
 		if n <= 1 then
 		begin
@@ -32,13 +32,13 @@ begin
 		if jeProst(s) then
 		begin
 			i := i + 1;
-
+			
 			if i = n then
 			begin
 				break;
 			end;
 		end;
-
+		
 		s := s + 1;
 	until false;
 

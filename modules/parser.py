@@ -411,6 +411,7 @@ class Parser:
 
     def exit(self):
         self.eat(Class.EXIT)
+        return_ = None
         if self.curr.class_ != Class.SEMICOLON:
             self.eat(Class.LPAREN)
             return_ = self.expression()
