@@ -1,7 +1,7 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp
+from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp, FuncProcCall, If, For, Repeat
 
 
 class Generator(Visitor):
@@ -53,10 +53,21 @@ class Generator(Visitor):
         self.newline()
         self.close_scope()
 
+    def is_control_flow(self, node):
+        if type(node) is If:
+            return True
+        if type(node) is For:
+            return True
+        if type(node) is Repeat:
+            return True
+        return False
+
     def visit_Block(self, parent, node):
         for n in node.nodes:
             self.indent()
             self.visit(node, n)
+            if not self.is_control_flow(n):
+                self.append(";")
             self.newline()
 
     def get_format(self, curr_var_type):
@@ -83,6 +94,8 @@ class Generator(Visitor):
                         curr_var_type = self.var_type[arg.id_.value]
                     elif type(arg) is BinOp:
                         curr_var_type = "integer"
+                    elif type(arg) is FuncProcCall:
+                        curr_var_type = self.var_type[arg.id_.value]
                     else:
                         curr_var_type = self.var_type[arg.value]
                     printString += self.get_format(curr_var_type)
@@ -97,12 +110,12 @@ class Generator(Visitor):
                     self.append(', ')
                     self.visit(node.args, arg)
             self.append(')')
-            self.append("; ")
         elif func == 'read' or func == 'readln':
-            for arg in node.args.args:
+            for i,arg in enumerate(node.args.args):
                 self.append('scanf')
                 self.append('(')
                 self.append('"')
+                print(self.var_type)
                 if type(arg) is ArrayElem:
                     curr_var_type = self.var_type[arg.id_.value]
                 else:
@@ -111,15 +124,15 @@ class Generator(Visitor):
                 self.append('", &')
                 self.visit(node.args, arg)
                 self.append(')')
-                self.append("; ")
-                self.newline()
-                self.indent()
+                if i < len(node.args.args) - 1:
+                    self.append("; ")
+                    self.newline()
+                    self.indent()
         else:
             self.append(func)
             self.append('(')
             self.visit(node, node.args)
             self.append(')')
-            self.append("; ")
 
     def visit_Args(self, parent, node):
         for i, a in enumerate(node.args):
@@ -136,6 +149,9 @@ class Generator(Visitor):
         self.append("'")
         self.append(node.value)
         self.append("'")
+
+    def visit_Continue(self, parent, node):
+        self.append("continue")
 
     def visit_Int(self, parent, node):
         self.append(node.value)
@@ -175,7 +191,6 @@ class Generator(Visitor):
         self.visit(node, node.id_)
         self.append(" = ")
         self.visit(node, node.expr)
-        self.append("; ")
 
     def visit_Type(self, parent, node):
         if node.value == 'integer' or node.value =='boolean':
@@ -192,6 +207,7 @@ class Generator(Visitor):
         self.append("for")
         self.append("(")
         self.visit(node, node.start)
+        self.append("; ")
         self.visit(node.start, node.start.id_)
         self.append(" <= ")
         self.visit(node, node.end)
@@ -241,6 +257,7 @@ class Generator(Visitor):
         self.close_scope()
 
     def visit_Func(self, parent, node):
+        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
@@ -278,7 +295,7 @@ class Generator(Visitor):
             self.visit(p, p.id_)
 
     def visit_Exit(self, parent, node):
-        self.append("return;")
+        self.append("return")
 
     def visit_ArrayElem(self, parent, node):
         self.visit(node, node.id_)
@@ -305,6 +322,11 @@ class Generator(Visitor):
                 self.append(", ")
             self.visit(node, elem)
         self.append("}")
+
+    def visit_UnOp(self, parent, node):
+        self.append(node.symbol)
+        self.visit(node, node.first)
+
 
     def generate(self, path):
         self.visit(None, self.ast)

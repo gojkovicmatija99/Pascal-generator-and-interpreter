@@ -1,4 +1,5 @@
 import pickle
+import copy
 from functools import wraps
 
 from modules.enums import Class
@@ -278,7 +279,7 @@ class Parser:
             data_type = self.array_type()
             for id_ in ids:
                 data_type.id_ = id_
-                data_type_id.append(data_type)
+                data_type_id.append(copy.deepcopy(data_type))
             return data_type_id
         else:
             data_type = self.type_()
