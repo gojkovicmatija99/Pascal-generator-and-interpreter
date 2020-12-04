@@ -125,7 +125,8 @@ class Continue(Node):
 
 
 class Exit(Node):
-    pass
+    def __init__(self, return_):
+        self.return_ = return_
 
 
 class Type(Node):
@@ -410,8 +411,12 @@ class Parser:
 
     def exit(self):
         self.eat(Class.EXIT)
+        if self.curr.class_ != Class.SEMICOLON:
+            self.eat(Class.LPAREN)
+            return_ = self.expression()
+            self.eat(Class.RPAREN)
         self.eat(Class.SEMICOLON)
-        return Exit()
+        return Exit(return_)
 
     def break_(self):
         self.eat(Class.BREAK)

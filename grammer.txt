@@ -12,6 +12,7 @@
 
  func_proc_call  => 				identifier  '('  arguments  ')'
  arguments  => 						( expression  )? ( ','  expression  )*
+ exit =>                            'exit' + ( '(' expressions ')' )?
 
  for_statement  =>  				'for'  expression  'to'  expression  'do'  begin_block_end  ';'
  if_statement  => 					'if'   logic_expression  'then'  begin_block_end  ( ';' | ( 'else'  begin_block_end  ';') )

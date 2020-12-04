@@ -35,6 +35,7 @@ class Generator(Visitor):
 
     def libs(self):
         self.append("#include<stdio.h>")
+        self.var_type['chr'] = 'char'
         self.newline()
         self.indent()
 
@@ -115,7 +116,6 @@ class Generator(Visitor):
                 self.append('scanf')
                 self.append('(')
                 self.append('"')
-                print(self.var_type)
                 if type(arg) is ArrayElem:
                     curr_var_type = self.var_type[arg.id_.value]
                 else:
@@ -128,6 +128,8 @@ class Generator(Visitor):
                     self.append("; ")
                     self.newline()
                     self.indent()
+        elif func == 'ord' or func == 'chr':
+            self.visit(node, node.args)
         else:
             self.append(func)
             self.append('(')
@@ -152,6 +154,9 @@ class Generator(Visitor):
 
     def visit_Continue(self, parent, node):
         self.append("continue")
+
+    def visit_Break(self, parent, node):
+        self.append("break")
 
     def visit_Int(self, parent, node):
         self.append(node.value)
@@ -209,7 +214,10 @@ class Generator(Visitor):
         self.visit(node, node.start)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        self.append(" <= ")
+        if node.type_.value == "increase":
+            self.append(" <= ")
+        elif node.type_.value == "decrease":
+            self.append(" >= ")
         self.visit(node, node.end)
         self.append("; ")
         self.visit(node.start, node.start.id_)
@@ -296,6 +304,10 @@ class Generator(Visitor):
 
     def visit_Exit(self, parent, node):
         self.append("return")
+        if node.return_ is not None:
+            self.append("(")
+            self.visit(node, node.return_)
+            self.append(")")
 
     def visit_ArrayElem(self, parent, node):
         self.visit(node, node.id_)
@@ -327,6 +339,21 @@ class Generator(Visitor):
         self.append(node.symbol)
         self.visit(node, node.first)
 
+    def visit_Repeat(self, parent, node):
+        self.append("do")
+        self.open_scope()
+        self.visit(node, node.block)
+        self.close_scope()
+        self.indent()
+        self.append("while(!(")
+        self.visit(node, node.cond)
+        self.append("));")
+
+    def visit_Boolean(self, parent, node):
+        if node.value == 'true':
+            self.append("1")
+        elif node.value == 'false':
+            self.append("0")
 
     def generate(self, path):
         self.visit(None, self.ast)

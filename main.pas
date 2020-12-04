@@ -1,63 +1,46 @@
-function cifra_stotina(s: char): char;
+function jeProst(n: integer): boolean;
+	var
+		i: integer;
+
 	begin
-		if ord(s) < 100 then
+		if n <= 1 then
 		begin
-			exit('0');
-		end
-		else
-		begin
-			exit(chr(ord('0') + ord(s) div 100));
+			exit(false);
 		end;
-	end;
 
-function cifra_desetica(s: char): char;
-	begin
-		if ord(s) < 10 then begin
-			exit('0');
-		end
-	    else
-	    begin
-		    exit(chr(ord('0') + (ord(s) div 10) mod 10));
-	    end;
-    end;
+		for i := n div 2 downto 2 do
+		begin
+			if n mod i = 0 then
+			begin
+				exit(false);
+			end;
+		end;
 
-function cifra_jedinica(s: char): char;
-	begin
-		exit(chr(ord('0') + ord(s) mod 10));
+		exit(true);
 	end;
 
 var
-	s, t: string;
-    ascii, tmp: char;
-	i, j, len: integer;
+	n, i, s: integer;
 
 begin
-	readln(s);
+	readln(n);
 
-	i := 1;
-	j := 1;
+	i := 0;
+	s := 1;
 
-    len := length(s);
+	repeat
+		if jeProst(s) then
+		begin
+			i := i + 1;
 
-	while i <= len do
-	begin
-		ascii := s[i];
-        inc(i);
+			if i = n then
+			begin
+				break;
+			end;
+		end;
 
-        tmp := cifra_stotina(ascii);
+		s := s + 1;
+	until false;
 
-        if (tmp <> '0') or (tmp = '0') and (j > 1) then
-        begin
-            insert(tmp, t, j);
-            inc(j);
-        end;
-
-		insert(cifra_desetica(ascii), t, j);
-        inc(j);
-
-		insert(cifra_jedinica(ascii), t, j);
-		inc(j);
-	end;
-
-	write(t);
+	writeln(s);
 end.
