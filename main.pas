@@ -1,25 +1,21 @@
 var
-	a1, b1, a2, b2, p1, p2: real;
+	i, j, n: integer;
 
 begin
-	readln(a1, b1, a2, b2);
+	readln(n);
 
-	p1 := a1 * b1 / 2;
-	p2 := a2 * b2 / 2;
-
-	if p1 > p2 then
+	for i := n downto 1 do
 	begin
-		write('1');
-	end
-	else
-	begin
-		if p1 < p2 then
+		for j := n - i downto 1 do
 		begin
-			write('2');
-		end
-		else
-		begin
-			write('0');
+			write(' ');
 		end;
+
+		for j := 2 * i - 1 downto 1 do
+		begin
+			write('*');
+		end;
+
+		writeln();
 	end;
 end.

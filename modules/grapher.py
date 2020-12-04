@@ -95,6 +95,7 @@ class Grapher(Visitor):
         self.visit(node, node.start)
         self.visit(node, node.end)
         self.visit(node, node.block)
+        self.visit(node, node.type_)
 
     def visit_Repeat(self, parent, node):
         self.add_node(parent, node)

@@ -51,6 +51,7 @@ class Class(Enum):
     PROCEDURE = auto()
     FUNCTION = auto()
     TO = auto()
+    DOWNTO = auto()
     DO = auto()
     THEN = auto()
     OF = auto()

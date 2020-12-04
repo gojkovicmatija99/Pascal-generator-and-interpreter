@@ -80,6 +80,8 @@ class Lexer:
             return Token(Class.FUNCTION, lexeme)
         elif lexeme == 'to':
             return Token(Class.TO, lexeme)
+        elif lexeme == 'downto':
+            return Token(Class.DOWNTO, lexeme)
         elif lexeme == 'do':
             return Token(Class.DO, lexeme)
         elif lexeme == 'div':

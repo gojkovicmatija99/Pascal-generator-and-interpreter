@@ -36,6 +36,7 @@ class Generator(Visitor):
     def libs(self):
         self.append("#include<stdio.h>")
         self.newline()
+        self.indent()
 
     def visit_Program(self, parent, node):
         self.libs()
@@ -196,7 +197,10 @@ class Generator(Visitor):
         self.visit(node, node.end)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        self.append("++")
+        if node.type_.value == "increase":
+            self.append("++")
+        elif node.type_.value == "decrease":
+            self.append("--")
         self.append(")")
         self.newline()
         self.open_scope()

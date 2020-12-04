@@ -65,10 +65,11 @@ class Repeat(Node):
 
 
 class For(Node):
-    def __init__(self, start, end, block):
+    def __init__(self, start, end, block, type_):
         self.start = start
         self.end = end
         self.block = block
+        self.type_ = type_
 
 
 class Proc(Node):
@@ -335,12 +336,19 @@ class Parser:
     def for_statement(self):
         self.eat(Class.FOR)
         start = self.expression()
-        self.eat(Class.TO)
+        if self.curr.class_ == Class.TO:
+            self.eat(Class.TO)
+            type_ = String("increase")
+        elif self.curr.class_ == Class.DOWNTO:
+            self.eat(Class.DOWNTO)
+            type_ = String("decrease")
+        else:
+            self.die_deriv(self.for_statement.__name__)
         end = self.expression()
         self.eat(Class.DO)
         block = self.begin_block_end()
         self.eat(Class.SEMICOLON)
-        return For(start, end, block)
+        return For(start, end, block, type_)
 
     def repeat_statement(self):
         self.eat(Class.REPEAT)
