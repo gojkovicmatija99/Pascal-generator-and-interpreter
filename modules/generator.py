@@ -35,6 +35,17 @@ class Generator(Visitor):
 
     def libs(self):
         self.append("#include<stdio.h>")
+        self.append('''
+void insert(char a, char *b, int position)
+{
+   char tmp[100];
+   strncpy(tmp, b, position);
+   tmp[position] = a;
+   tmp[position+1]='\0';
+   strcat(tmp, b+position);
+   puts(tmp);
+   b = tmp;
+}''')
         self.var_type['chr'] = 'char'
         self.newline()
         self.indent()
@@ -123,7 +134,9 @@ class Generator(Visitor):
                 else:
                     curr_var_type = self.var_type[arg.value]
                 self.append(self.get_format(curr_var_type))
-                self.append('", &')
+                self.append('", ')
+                if curr_var_type != "string":
+                    self.append("&")
                 self.visit(node.args, arg)
                 self.append(')')
                 if i < len(node.args.args) - 1:
@@ -201,6 +214,8 @@ class Generator(Visitor):
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
+        if node.type_.value == 'string':
+            self.append("[100]")
 
 
     def visit_Assign(self, parent, node):
@@ -213,6 +228,8 @@ class Generator(Visitor):
             self.append('int')
         elif node.value == 'real':
             self.append('float')
+        elif node.value == 'string':
+            self.append('char')
         else:
             self.append(node.value)
 
