@@ -4,6 +4,7 @@ from modules.generator import Generator
 from modules.lexer import Lexer
 from modules.parser import Parser
 from modules.grapher import Grapher
+from modules.symbolizer import Symbolizer
 
 cd = os.path.sep
 test_id = '15'
@@ -17,6 +18,9 @@ with open(path, 'r') as source:
 
     parser = Parser(tokens)
     ast = parser.parse()
+
+    symbolizer = Symbolizer(ast)
+    symbolizer.symbolize()
 
     # grapher = Grapher(ast)
     # img = grapher.graph()

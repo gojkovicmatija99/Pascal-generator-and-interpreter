@@ -1,7 +1,8 @@
 import re
 
 from modules.grapher import Visitor
-from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp, FuncProcCall, If, For, Repeat, While
+from modules.parser import Program, Var, Block, String, Char, ArrayElem, BinOp, FuncProcCall, If, For, Repeat, While, \
+    Func, Proc
 
 
 class Generator(Visitor):
@@ -9,7 +10,12 @@ class Generator(Visitor):
         self.ast = ast
         self.py = ""
         self.level = 0
-        self.var_type = {}
+        self.symbol_tables = [ast.symbols]
+
+    def get_var_type(self, id_):
+        for curr in reversed(self.symbol_tables):
+            if curr.contains(id_):
+                return curr.get(id_).type_
 
     def append(self, text):
         self.py += str(text)
@@ -46,7 +52,6 @@ void insert(char a, char *b, int position)
    puts(tmp);
    b = tmp;
 }''')
-        self.var_type['chr'] = 'char'
         self.newline()
         self.indent()
 
@@ -77,12 +82,16 @@ void insert(char a, char *b, int position)
         return False
 
     def visit_Block(self, parent, node):
+        if type(parent) is not Program:
+            self.symbol_tables.append(node.symbols)
         for n in node.nodes:
             self.indent()
             self.visit(node, n)
             if not self.is_control_flow(n):
                 self.append(";")
             self.newline()
+        if len(self.symbol_tables) > 1:
+            self.symbol_tables.pop()
 
     def get_format(self, curr_var_type):
         if curr_var_type == 'integer' or  curr_var_type == 'boolean':
@@ -105,14 +114,14 @@ void insert(char a, char *b, int position)
                     printString += arg.value
                 else:
                     if type(arg) is ArrayElem:
-                        curr_var_type = self.var_type[arg.id_.value]
+                        curr_symbol = self.get_var_type(arg.id_.value)
                     elif type(arg) is BinOp:
-                        curr_var_type = "integer"
+                        curr_symbol = "integer"
                     elif type(arg) is FuncProcCall:
-                        curr_var_type = self.var_type[arg.id_.value]
+                        curr_symbol = self.get_var_type(arg.id_.value)
                     else:
-                        curr_var_type = self.var_type[arg.value]
-                    printString += self.get_format(curr_var_type)
+                        curr_symbol = self.get_var_type(arg.value)
+                    printString += self.get_format(curr_symbol)
 
             self.append('"')
             self.append(printString)
@@ -130,12 +139,12 @@ void insert(char a, char *b, int position)
                 self.append('(')
                 self.append('"')
                 if type(arg) is ArrayElem:
-                    curr_var_type = self.var_type[arg.id_.value]
+                    curr_symbol = self.get_var_type(arg.id_.value)
                 else:
-                    curr_var_type = self.var_type[arg.value]
-                self.append(self.get_format(curr_var_type))
+                    curr_symbol = self.get_var_type(arg.value)
+                self.append(self.get_format(curr_symbol))
                 self.append('", ')
-                if curr_var_type != "string":
+                if curr_symbol != "string":
                     self.append("&")
                 self.visit(node.args, arg)
                 self.append(')')
@@ -210,7 +219,6 @@ void insert(char a, char *b, int position)
         self.newline()
 
     def visit_Decl(self, parent, node):
-        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
@@ -293,7 +301,6 @@ void insert(char a, char *b, int position)
         self.close_scope()
 
     def visit_Func(self, parent, node):
-        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
@@ -344,7 +351,6 @@ void insert(char a, char *b, int position)
         self.append(']')
 
     def visit_ArrayDecl(self, parent, node):
-        self.var_type[node.id_.value] = node.type_.value
         self.visit(node, node.type_)
         self.append(" ")
         self.visit(node, node.id_)
