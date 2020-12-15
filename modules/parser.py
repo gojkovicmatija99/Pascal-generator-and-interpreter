@@ -521,6 +521,13 @@ class Parser:
             self.eat(Class.LPAREN)
             first = self.logic_expression()
             self.eat(Class.RPAREN)
+            if self.curr.class_ == Class.COLON and type(first) is BinOp:
+                self.eat(Class.COLON)
+                self.eat(Class.INT)
+                self.eat(Class.COLON)
+                decimal = Int(self.curr.lexeme)
+                self.eat(Class.INT)
+                first.decimal = decimal
             return first
         elif self.curr.class_ == Class.SEMICOLON:
             return None

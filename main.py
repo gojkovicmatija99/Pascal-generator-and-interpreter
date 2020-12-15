@@ -7,7 +7,7 @@ from modules.grapher import Grapher
 from modules.symbolizer import Symbolizer
 
 cd = os.path.sep
-test_id = '15'
+test_id = '01'
 path = f'debug{cd}{test_id}{cd}src.pas'
 
 with open(path, 'r') as source:
@@ -22,8 +22,8 @@ with open(path, 'r') as source:
     symbolizer = Symbolizer(ast)
     symbolizer.symbolize()
 
-    # grapher = Grapher(ast)
-    # img = grapher.graph()
+    grapher = Grapher(ast)
+    img = grapher.graph()
 
     generator = Generator(ast)
     code = generator.generate('main.c')
