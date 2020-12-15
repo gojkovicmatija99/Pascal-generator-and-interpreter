@@ -117,12 +117,12 @@ void insert(char a, char *b, int position)
                         curr_symbol = self.get_var_type(arg.id_.value)
                     elif type(arg) is BinOp:
                         curr_symbol = self.get_var_type(arg.first.value)
-                        decimal = arg.decimal.value
                     elif type(arg) is FuncProcCall:
                         curr_symbol = self.get_var_type(arg.id_.value)
                     else:
                         curr_symbol = self.get_var_type(arg.value)
-                    if decimal is not None:
+                    if hasattr(arg, 'decimal'):
+                        decimal = arg.decimal.value
                         formatting = "%." + str(decimal) + self.get_format(curr_symbol)
                     else:
                         formatting = "%" + self.get_format(curr_symbol)

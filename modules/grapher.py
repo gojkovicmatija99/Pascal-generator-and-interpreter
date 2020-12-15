@@ -185,7 +185,7 @@ class Grapher(Visitor):
         self.add_node(parent, node, name)
         self.visit(node, node.first)
         self.visit(node, node.second)
-        if node.decimal is not None:
+        if hasattr(node, 'decimal'):
             self.visit(node, node.decimal)
 
     def visit_UnOp(self, parent, node):

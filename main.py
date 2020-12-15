@@ -7,7 +7,7 @@ from modules.grapher import Grapher
 from modules.symbolizer import Symbolizer
 
 cd = os.path.sep
-test_id = '01'
+test_id = '10'
 path = f'debug{cd}{test_id}{cd}src.pas'
 
 with open(path, 'r') as source:
