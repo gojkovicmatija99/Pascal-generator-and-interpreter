@@ -95,13 +95,13 @@ void insert(char a, char *b, int position)
 
     def get_format(self, curr_var_type):
         if curr_var_type == 'integer' or  curr_var_type == 'boolean':
-            return "%d"
+            return "d"
         if curr_var_type == 'char':
-            return "%c"
+            return "c"
         if curr_var_type == 'string':
-            return "%s"
+            return "s"
         if curr_var_type == 'real':
-            return "%f"
+            return "f"
 
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
@@ -116,12 +116,17 @@ void insert(char a, char *b, int position)
                     if type(arg) is ArrayElem:
                         curr_symbol = self.get_var_type(arg.id_.value)
                     elif type(arg) is BinOp:
-                        curr_symbol = "integer"
+                        curr_symbol = self.get_var_type(arg.first.value)
+                        decimal = arg.decimal.value
                     elif type(arg) is FuncProcCall:
                         curr_symbol = self.get_var_type(arg.id_.value)
                     else:
                         curr_symbol = self.get_var_type(arg.value)
-                    printString += self.get_format(curr_symbol)
+                    if decimal is not None:
+                        formatting = "%." + str(decimal) + self.get_format(curr_symbol)
+                    else:
+                        formatting = "%" + self.get_format(curr_symbol)
+                    printString += formatting
 
             self.append('"')
             self.append(printString)
@@ -142,6 +147,7 @@ void insert(char a, char *b, int position)
                     curr_symbol = self.get_var_type(arg.id_.value)
                 else:
                     curr_symbol = self.get_var_type(arg.value)
+                self.append("%")
                 self.append(self.get_format(curr_symbol))
                 self.append('", ')
                 if curr_symbol != "string":
