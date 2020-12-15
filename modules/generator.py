@@ -42,15 +42,35 @@ class Generator(Visitor):
     def libs(self):
         self.append("#include<stdio.h>")
         self.append('''
-void insert(char a, char *b, int position)
+void insert(char tmp, char* a, int p)
 {
-   char tmp[100];
-   strncpy(tmp, b, position);
-   tmp[position] = a;
-   tmp[position+1]='\0';
-   strcat(tmp, b+position);
-   puts(tmp);
-   b = tmp;
+    int i=0;
+	int t=0;
+	int x,g,s,o;
+	char c[100], b[100];
+	b[0]=tmp;
+	b[1]='\0';
+	int	r = strlen(a);
+	int n = strlen(b);
+   	while(i <= r)
+	{
+		c[i]=a[i];
+		i++;
+	}
+	s = n+r;
+	o = p+n;
+
+	for(i=p;i<s;i++)
+	{
+		x = c[i];
+		if(t<n)
+		{
+			a[i] = b[t];
+			t=t+1;
+		}
+		a[o]=x;
+		o=o+1;
+	}
 }''')
         self.newline()
         self.indent()
