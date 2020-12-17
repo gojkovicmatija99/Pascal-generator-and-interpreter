@@ -122,12 +122,18 @@ class Runner(Visitor):
             for arg in args:
                 scan = input()
                 id_ = self.visit(node.args, arg)
-                if id_.type_ == 'int':
+                if id_.type_ == 'integer':
                     id_.value = int(scan)
                 elif id_.type_ == 'real':
                     id_.value = float(scan)
                 else:
                     id_.value = scan
+        elif func == 'ord':
+            integer = self.visit(node, args[0])
+            return ord(integer.value)
+        elif func == 'chr':
+            char = self.visit(node, args[0])
+            return chr(char)
         else:
             impl = self.global_[func]
             self.init_scope(impl.block)
@@ -200,7 +206,7 @@ class Runner(Visitor):
     def cast(self, symb):
         if isinstance(symb, Symbol):
             num = symb.value
-            if symb.type_ == 'int':
+            if symb.type_ == 'integer':
                 return int(num)
             elif symb.type_ == 'real':
                 return float(num)
@@ -216,9 +222,9 @@ class Runner(Visitor):
             return self.cast(first) - self.cast(second)
         elif node.symbol == '*':
             return self.cast(first) * self.cast(second)
-        elif node.symbol == '/':
+        elif node.symbol == 'div':
             return self.cast(first) / self.cast(second)
-        elif node.symbol == '%':
+        elif node.symbol == 'mod':
             return self.cast(first) % self.cast(second)
         elif node.symbol == '==':
             return first == second

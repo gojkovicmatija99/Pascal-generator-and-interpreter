@@ -8,7 +8,7 @@ from modules.runner import Runner
 from modules.symbolizer import Symbolizer
 
 cd = os.path.sep
-test_id = '01'
+test_id = '03'
 path = f'debug{cd}{test_id}{cd}src.pas'
 
 with open(path, 'r') as source:
