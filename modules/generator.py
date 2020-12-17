@@ -79,7 +79,7 @@ void insert(char tmp, char* a, int p)
         self.libs()
         is_in_main = True
         for n in node.nodes:
-            if is_in_main and (type(n) is Var or type(n) is Block):
+            if is_in_main and (isinstance(n, Var) or isinstance(n, Block)):
                 self.append("int main()")
                 self.newline()
                 self.open_scope()
@@ -91,18 +91,18 @@ void insert(char tmp, char* a, int p)
         self.close_scope()
 
     def is_control_flow(self, node):
-        if type(node) is If:
+        if isinstance(node, If):
             return True
-        if type(node) is For:
+        if isinstance(node, For):
             return True
-        if type(node) is Repeat:
+        if isinstance(node, Repeat):
             return True
-        if type(node) is While:
+        if isinstance(node, While):
             return True
         return False
 
     def visit_Block(self, parent, node):
-        if type(parent) is not Program:
+        if not isinstance(parent, Program):
             self.symbol_tables.append(node.symbols)
         for n in node.nodes:
             self.indent()
@@ -130,14 +130,14 @@ void insert(char tmp, char* a, int p)
             self.append('(')
             printString = ""
             for arg in node.args.args:
-                if type(arg) is String or type(arg) is Char:
+                if isinstance(arg, String) or isinstance(arg, Char):
                     printString += arg.value
                 else:
-                    if type(arg) is ArrayElem:
+                    if isinstance(arg, ArrayElem):
                         curr_symbol = self.get_var_type(arg.id_.value)
-                    elif type(arg) is BinOp:
+                    elif isinstance(arg, BinOp):
                         curr_symbol = self.get_var_type(arg.first.value)
-                    elif type(arg) is FuncProcCall:
+                    elif isinstance(arg, FuncProcCall):
                         curr_symbol = self.get_var_type(arg.id_.value)
                     else:
                         curr_symbol = self.get_var_type(arg.value)
@@ -154,7 +154,7 @@ void insert(char tmp, char* a, int p)
                 self.append("\\n")
             self.append('"')
             for arg in node.args.args:
-                if type(arg) is not String and type(arg) is not Char:
+                if not isinstance(arg, String) and not isinstance(arg, Char):
                     self.append(', ')
                     self.visit(node.args, arg)
             self.append(')')
@@ -163,7 +163,7 @@ void insert(char tmp, char* a, int p)
                 self.append('scanf')
                 self.append('(')
                 self.append('"')
-                if type(arg) is ArrayElem:
+                if isinstance(arg, ArrayElem):
                     curr_symbol = self.get_var_type(arg.id_.value)
                 else:
                     curr_symbol = self.get_var_type(arg.value)

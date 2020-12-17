@@ -4,10 +4,11 @@ from modules.generator import Generator
 from modules.lexer import Lexer
 from modules.parser import Parser
 from modules.grapher import Grapher
+from modules.runner import Runner
 from modules.symbolizer import Symbolizer
 
 cd = os.path.sep
-test_id = '15'
+test_id = '01'
 path = f'debug{cd}{test_id}{cd}src.pas'
 
 with open(path, 'r') as source:
@@ -27,3 +28,6 @@ with open(path, 'r') as source:
 
     generator = Generator(ast)
     code = generator.generate('main.c')
+
+    runner = Runner(ast)
+    runner.run()
