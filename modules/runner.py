@@ -2,7 +2,7 @@ import re
 from _ast import Return
 
 from modules.grapher import Visitor
-from modules.parser import Int, Char, String, Id, Continue, Break
+from modules.parser import Int, Char, String, Id, Continue, Break, BinOp
 from modules.symbolizer import Symbol
 
 
@@ -105,31 +105,13 @@ class Runner(Visitor):
         func = node.id_.value
         args = node.args.args
         if func == 'write' or func == 'writeln':
-            # format_ = args[0].value
-            # format_ = format_.replace('\\n', '\n')
-            # for a in args[1:]:
-            #     if isinstance(a, Int):
-            #         format_ = format_.replace('%d', a.value, 1)
-            #     elif isinstance(a, Char):
-            #         format_ = format_.replace('%c', chr(a.value), 1)
-            #     elif isinstance(a, String):
-            #         format_ = format_.replace('%s', a.value, 1)
-            #     elif isinstance(a, Id):
-            #         id_ = self.visit(node.args, a)
-            #         value = id_.value
-            #         if id_.type_ == 'char':
-            #             value = chr(value)
-            #         format_ = re.sub('%[dcs]', str(value), format_, 1)
-            #     else:
-            #         value = self.visit(node.args, a)
-            #         format_ = re.sub('%[dcs]', str(value), format_, 1)
-            # print(format_, end='')
             format_ = ""
             for arg in args:
                 curr = self.visit(node, arg)
                 if isinstance(arg, String) or isinstance(arg, Char):
                     format_ += curr
-
+                elif isinstance(arg, BinOp) and hasattr(arg, 'decimal'):
+                    format_ += str(round(curr, arg.decimal.value))
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -140,7 +122,12 @@ class Runner(Visitor):
             for arg in args:
                 scan = input()
                 id_ = self.visit(node.args, arg)
-                id_.value = int(scan)
+                if id_.type_ == 'int':
+                    id_.value = int(scan)
+                elif id_.type_ == 'real':
+                    id_.value = float(scan)
+                else:
+                    id_.value = scan
         else:
             impl = self.global_[func]
             self.init_scope(impl.block)
@@ -210,35 +197,41 @@ class Runner(Visitor):
     def visit_Id(self, parent, node):
         return self.get_symbol(node)
 
+    def cast(self, symb):
+        if isinstance(symb, Symbol):
+            num = symb.value
+            if symb.type_ == 'int':
+                return int(num)
+            elif symb.type_ == 'real':
+                return float(num)
+        else:
+            return symb
+
     def visit_BinOp(self, parent, node):
         first = self.visit(node, node.first)
-        if isinstance(first, Symbol):
-            first = first.value
         second = self.visit(node, node.second)
-        if isinstance(second, Symbol):
-            second = second.value
         if node.symbol == '+':
-            return int(first) + int(second)
+            return self.cast(first) + self.cast(second)
         elif node.symbol == '-':
-            return int(first) - int(second)
+            return self.cast(first) - self.cast(second)
         elif node.symbol == '*':
-            return int(first) * int(second)
+            return self.cast(first) * self.cast(second)
         elif node.symbol == '/':
-            return int(first) / int(second)
+            return self.cast(first) / self.cast(second)
         elif node.symbol == '%':
-            return int(first) % int(second)
+            return self.cast(first) % self.cast(second)
         elif node.symbol == '==':
             return first == second
         elif node.symbol == '!=':
             return first != second
         elif node.symbol == '<':
-            return int(first) < int(second)
+            return self.cast(first) < self.cast(second)
         elif node.symbol == '>':
-            return int(first) > int(second)
+            return self.cast(first) > self.cast(second)
         elif node.symbol == '<=':
-            return int(first) <= int(second)
+            return self.cast(first) <= self.cast(second)
         elif node.symbol == '>=':
-            return int(first) >= int(second)
+            return self.cast(first) >= self.cast(second)
         elif node.symbol == '&&':
             bool_first = first != 0
             bool_second = second != 0
