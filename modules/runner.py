@@ -1,5 +1,6 @@
 import re
 from _ast import Return
+import numpy as np
 
 from modules.grapher import Visitor
 from modules.parser import Int, Char, String, Id, Continue, Break, BinOp
@@ -50,10 +51,24 @@ class Runner(Visitor):
         id_.value = None
 
     def visit_ArrayDecl(self, parent, node):
-        pass
+        id_ = self.get_symbol(node.id_)
+        id_.symbols = node.symbols
+        start = self.visit(node, node.start_index)
+        end = self.visit(node, node.end_index)
+        size = end - start + 1
+        # size, elems = node.size, node.elems
+        # if elems is not None:
+        #     self.visit(node, elems)
+        for i in range(size):
+            id_.symbols.put(i, id_.type_, None)
+            id_.symbols.get(i).value = None
 
     def visit_ArrayElem(self, parent, node):
-        pass
+        if isinstance(node.index, Id):
+            index = self.get_symbol(node.index).value
+        else:
+            index = node.index.value
+        return (node.id_, index)
 
     def visit_Assign(self, parent, node):
         id_ = self.visit(node, node.id_)
@@ -83,18 +98,21 @@ class Runner(Visitor):
             cond = self.visit(node, node.cond)
 
     def check_condition(self, first, second, type_):
-        if type_ == 'increase':
-            val = self.get_symbol(first).value
-            cond = val < second
+        val_first = self.get_symbol(first).value
+        if isinstance(second, Id):
+            val_second = self.get_symbol(second).value
         else:
-            val = self.get_symbol(first).value
-            cond = val >= second
+            val_second = second.value
+        if type_ == 'increase':
+            cond = val_first < val_second
+        else:
+            cond = val_first >= val_second
         return cond
 
     def visit_For(self, parent, node):
         self.visit(node, node.start)
         first = node.start.id_
-        second = self.visit(node, node.end)
+        second = node.end
         type_ = self.visit(node, node.type_)
         cond = self.check_condition(first, second, type_)
         while cond:
@@ -107,17 +125,17 @@ class Runner(Visitor):
                 self.get_symbol(first).value -= 1
             cond = self.check_condition(first, second, type_)
 
-    def visit_FuncImpl(self, parent, node):
+    def visit_Func(self, parent, node):
         id_ = self.get_symbol(node.id_)
         id_.params = node.params
         id_.block = node.block
-        if node.id_.value == 'main':
-            self.init_scope(node.block)
-            self.visit(node, node.block)
-            self.clear_scope(node.block)
+
+    def visit_Proc(self, parent, node):
+        id_ = self.get_symbol(node.id_)
+        id_.params = node.params
+        id_.block = node.block
 
     def my_ord(self, node, arg):
-        val = self.visit(node, arg)
         if isinstance(arg, Id):
             symb = self.get_symbol(arg)
             val = symb.value
@@ -126,7 +144,6 @@ class Runner(Visitor):
         return ord(val)
 
     def my_chr(self, node, arg):
-        char = self.visit(node, arg)
         if isinstance(arg, Id):
             symb = self.get_symbol(arg)
             char = symb.value
