@@ -82,15 +82,30 @@ class Runner(Visitor):
             self.clear_scope(node.block)
             cond = self.visit(node, node.cond)
 
+    def check_condition(self, first, second, type_):
+        if type_ == 'increase':
+            val = self.get_symbol(first).value
+            cond = val < second
+        else:
+            val = self.get_symbol(first).value
+            cond = val >= second
+        return cond
+
     def visit_For(self, parent, node):
-        self.visit(node, node.init)
-        cond = self.visit(node, node.cond)
+        self.visit(node, node.start)
+        first = node.start.id_
+        second = self.visit(node, node.end)
+        type_ = self.visit(node, node.type_)
+        cond = self.check_condition(first, second, type_)
         while cond:
             self.init_scope(node.block)
             self.visit(node, node.block)
             self.clear_scope(node.block)
-            self.visit(node, node.step)
-            cond = self.visit(node, node.cond)
+            if type_ == 'increment':
+                self.get_symbol(first).value += 1
+            else:
+                self.get_symbol(first).value -= 1
+            cond = self.check_condition(first, second, type_)
 
     def visit_FuncImpl(self, parent, node):
         id_ = self.get_symbol(node.id_)

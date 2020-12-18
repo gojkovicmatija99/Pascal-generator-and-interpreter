@@ -1,4 +1,5 @@
 from modules.generator import Generator
+from modules.grapher import Grapher
 from modules.lexer import Lexer
 from modules.parser import Parser
 from modules.runner import Runner
@@ -7,7 +8,7 @@ from modules.symbolizer import Symbolizer
 DEBUG = True  # OBAVEZNO: Postaviti na False pre slanja projekta
 
 if DEBUG:
-    test_id = '06'  # Redni broj test primera [01-15]
+    test_id = '07'  # Redni broj test primera [01-15]
     path_root = './'
     args = {}
     args['src'] = f'{path_root}{test_id}/src.pas'  # Izvorna PAS datoteka
@@ -26,6 +27,8 @@ with open(args['src'], 'r') as source:
     tokens = lexer.lex()
     parser = Parser(tokens)
     ast = parser.parse()
+    grapher = Grapher(ast)
+    grapher.graph()
     symbolizer = Symbolizer(ast)
     symbolizer.symbolize()
     generator = Generator(ast)

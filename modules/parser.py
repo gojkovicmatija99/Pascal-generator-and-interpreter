@@ -343,7 +343,7 @@ class Parser:
             type_ = String("increase")
         elif self.curr.class_ == Class.DOWNTO:
             self.eat(Class.DOWNTO)
-            type_ = String("decrease")
+            type_ = String("decrement")
         else:
             self.die_deriv(self.for_statement.__name__)
         end = self.expression()
