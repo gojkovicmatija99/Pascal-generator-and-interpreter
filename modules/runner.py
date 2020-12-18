@@ -101,6 +101,24 @@ class Runner(Visitor):
             self.visit(node, node.block)
             self.clear_scope(node.block)
 
+    def my_ord(self, node, arg):
+        val = self.visit(node, arg)
+        if isinstance(arg, Id):
+            symb = self.get_symbol(arg)
+            val = symb.value
+        else:
+            val = arg.value
+        return ord(val)
+
+    def my_chr(self, node, arg):
+        char = self.visit(node, arg)
+        if isinstance(arg, Id):
+            symb = self.get_symbol(arg)
+            char = symb.value
+        else:
+            char = arg.value
+        return chr(char)
+
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
         args = node.args.args
@@ -129,11 +147,9 @@ class Runner(Visitor):
                 else:
                     id_.value = scan
         elif func == 'ord':
-            integer = self.visit(node, args[0])
-            return ord(integer.value)
+            return self.my_ord(node, args[0])
         elif func == 'chr':
-            char = self.visit(node, args[0])
-            return chr(char)
+            return self.my_chr(node, args[0])
         else:
             impl = self.global_[func]
             self.init_scope(impl.block)
@@ -210,6 +226,8 @@ class Runner(Visitor):
                 return int(num)
             elif symb.type_ == 'real':
                 return float(num)
+            else:
+                return num
         else:
             return symb
 
@@ -223,6 +241,8 @@ class Runner(Visitor):
         elif node.symbol == '*':
             return self.cast(first) * self.cast(second)
         elif node.symbol == 'div':
+            return self.cast(first) // self.cast(second)
+        elif node.symbol == '/':
             return self.cast(first) / self.cast(second)
         elif node.symbol == 'mod':
             return self.cast(first) % self.cast(second)
@@ -238,14 +258,10 @@ class Runner(Visitor):
             return self.cast(first) <= self.cast(second)
         elif node.symbol == '>=':
             return self.cast(first) >= self.cast(second)
-        elif node.symbol == '&&':
-            bool_first = first != 0
-            bool_second = second != 0
-            return bool_first and bool_second
-        elif node.symbol == '||':
-            bool_first = first != 0
-            bool_second = second != 0
-            return bool_first or bool_second
+        elif node.symbol == 'and':
+            return self.cast(first) and self.cast(second)
+        elif node.symbol == 'or':
+            return self.cast(first) or self.cast(second)
         else:
             return None
 

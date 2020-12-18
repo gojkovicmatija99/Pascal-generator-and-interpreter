@@ -1,13 +1,14 @@
-# ACINONYX - BEGIN
 from modules.generator import Generator
 from modules.lexer import Lexer
 from modules.parser import Parser
+from modules.runner import Runner
+from modules.symbolizer import Symbolizer
 
 DEBUG = True  # OBAVEZNO: Postaviti na False pre slanja projekta
 
 if DEBUG:
-    test_id = '14'  # Redni broj test primera [01-15]
-    path_root = ''
+    test_id = '06'  # Redni broj test primera [01-15]
+    path_root = './'
     args = {}
     args['src'] = f'{path_root}{test_id}/src.pas'  # Izvorna PAS datoteka
     args['gen'] = f'{path_root}{test_id}/gen.c'  # Generisana C datoteka
@@ -25,9 +26,11 @@ with open(args['src'], 'r') as source:
     tokens = lexer.lex()
     parser = Parser(tokens)
     ast = parser.parse()
+    symbolizer = Symbolizer(ast)
+    symbolizer.symbolize()
     generator = Generator(ast)
     generator.generate(args['gen'])
+    runner = Runner(ast)
+    runner.run()
 
 # ACINONYX - END
-
-
