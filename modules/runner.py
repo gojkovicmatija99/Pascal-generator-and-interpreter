@@ -140,7 +140,7 @@ class Runner(Visitor):
             symb = self.get_symbol(arg)
             val = symb.value
         else:
-            val = arg.value
+            val = self.visit(node, arg)
         return ord(val)
 
     def my_chr(self, node, arg):
@@ -148,8 +148,25 @@ class Runner(Visitor):
             symb = self.get_symbol(arg)
             char = symb.value
         else:
-            char = arg.value
+            char = self.visit(node, arg)
         return chr(char)
+
+    def isfloat(self, x):
+        try:
+            a = float(x)
+        except (TypeError, ValueError):
+            return False
+        else:
+            return True
+
+    def isint(self, x):
+        try:
+            a = float(x)
+            b = int(a)
+        except (TypeError, ValueError):
+            return False
+        else:
+            return a == b
 
     def visit_FuncProcCall(self, parent, node):
         func = node.id_.value
@@ -161,7 +178,7 @@ class Runner(Visitor):
                 if isinstance(arg, String) or isinstance(arg, Char):
                     format_ += curr
                 elif isinstance(arg, BinOp) and hasattr(arg, 'decimal'):
-                    format_ += str(round(curr, arg.decimal.value))
+                    format_ += "{:.2f}".format(curr)
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -169,9 +186,16 @@ class Runner(Visitor):
             else:
                 print(format_, end='')
         elif func == 'read' or func == 'readln':
-            for arg in args:
-                scan = input()
-                id_ = self.visit(node.args, arg)
+            scan = input()
+            vals = scan.split()
+            for i, val in enumerate(vals):
+                if self.isint(val):
+                    scan = int(val)
+                elif self.isfloat(val):
+                    scan = float(val)
+                else:
+                    scan = val
+                id_ = self.visit(node.args, args[i])
                 if id_.type_ == 'integer':
                     id_.value = int(scan)
                 elif id_.type_ == 'real':
