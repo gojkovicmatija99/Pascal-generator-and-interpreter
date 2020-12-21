@@ -93,11 +93,13 @@ class Symbolizer(Visitor):
         parent.symbols.put(node.id_.value, "void", id(parent))
         self.visit(node, node.block)
         self.visit(node, node.params)
+        self.visit(node.block, node.variables)
 
     def visit_Func(self, parent, node):
         parent.symbols.put(node.id_.value, node.type_.value, id(parent))
         self.visit(node, node.block)
         self.visit(node, node.params)
+        self.visit(node.block, node.variables)
 
     def visit_FuncProcCall(self, parent, node):
         pass

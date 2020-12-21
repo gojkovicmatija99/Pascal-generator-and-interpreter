@@ -74,11 +74,13 @@ class Runner(Visitor):
         id_ = self.visit(node, node.id_)
         value = self.visit(node, node.expr)
         if isinstance(value, Symbol):
-            value = value.value
+            id_.value = value.value
         id_.value = value
 
     def visit_If(self, parent, node):
         cond = self.visit(node, node.cond)
+        if isinstance(cond, Symbol):
+            cond = cond.value
         if cond:
             self.init_scope(node.true)
             self.visit(node, node.true)
@@ -245,11 +247,12 @@ class Runner(Visitor):
         func = parent.id_.value
         impl = self.global_[func]
         for p, a in zip(impl.params.params, node.args):
-            arg = self.visit(impl.block, a)
+            curr_arg = self.visit(impl.block, a)
+            arg = self.global_[curr_arg.id_]
             id_ = self.visit(impl.block, p.id_)
-            id_.value = arg
-            if isinstance(arg, Symbol):
-                id_.value = arg.value
+            id_.value = arg.value
+            # if isinstance(arg, Symbol):
+            #     id_.value = arg.value
 
 
     def visit_Elems(self, parent, node):
@@ -261,7 +264,7 @@ class Runner(Visitor):
     def visit_Continue(self, parent, node):
         pass
 
-    def visit_Return(self, parent, node):
+    def visit_Exit(self, parent, node):
         pass
 
     def visit_Type(self, parent, node):
@@ -294,6 +297,10 @@ class Runner(Visitor):
     def visit_BinOp(self, parent, node):
         first = self.visit(node, node.first)
         second = self.visit(node, node.second)
+        if isinstance(first, Symbol):
+            first = first.value
+            if isinstance(second, Symbol):
+                first = second.value
         if node.symbol == '+':
             return self.cast(first) + self.cast(second)
         elif node.symbol == '-':
@@ -306,7 +313,7 @@ class Runner(Visitor):
             return self.cast(first) / self.cast(second)
         elif node.symbol == 'mod':
             return self.cast(first) % self.cast(second)
-        elif node.symbol == '==':
+        elif node.symbol == '=':
             return first == second
         elif node.symbol == '!=':
             return first != second
@@ -333,10 +340,8 @@ class Runner(Visitor):
         if node.symbol == '-':
             return -first
         elif node.symbol == '!':
-            bool_first = first != 0
+            bool_first = first != False
             return not bool_first
-        elif node.symbol == '&':
-            return backup_first
         else:
             return None
 
