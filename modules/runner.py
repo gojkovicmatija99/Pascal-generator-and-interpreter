@@ -3,7 +3,7 @@ from _ast import Return
 import numpy as np
 
 from modules.grapher import Visitor
-from modules.parser import Int, Char, String, Id, Continue, Break, BinOp
+from modules.parser import Int, Char, String, Id, Continue, Break, BinOp, FuncProcCall
 from modules.symbolizer import Symbol
 
 
@@ -179,6 +179,8 @@ class Runner(Visitor):
                     format_ += curr
                 elif isinstance(arg, BinOp) and hasattr(arg, 'decimal'):
                     format_ += "{:.2f}".format(curr)
+                elif isinstance(curr, Symbol):
+                    format_ += str(curr.value)
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -209,7 +211,6 @@ class Runner(Visitor):
         else:
             impl = self.global_[func]
             self.init_scope(impl.block)
-            self.visit(node, node.args)
             result = self.visit(node, impl.block)
             self.clear_scope(impl.block)
             self.return_ = False
@@ -219,6 +220,8 @@ class Runner(Visitor):
         result = None
         scope = id(node)
         self.scope.append(scope)
+        if isinstance(parent, FuncProcCall):
+            self.visit(parent, parent.args)
         for n in node.nodes:
             if self.return_:
                 break
@@ -247,6 +250,7 @@ class Runner(Visitor):
             id_.value = arg
             if isinstance(arg, Symbol):
                 id_.value = arg.value
+
 
     def visit_Elems(self, parent, node):
         pass
