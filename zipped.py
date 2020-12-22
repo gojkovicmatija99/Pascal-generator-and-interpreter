@@ -947,6 +947,8 @@ class Visitor():
         method = 'visit_' + type(node).__name__
         raise SystemExit("Missing method: {}".format(method))
 
+
+
 class Symbol:
     def __init__(self, id_, type_, scope):
         self.id_ = id_
@@ -1039,11 +1041,13 @@ class Symbolizer(Visitor):
         parent.symbols.put(node.id_.value, "void", id(parent))
         self.visit(node, node.block)
         self.visit(node, node.params)
+        self.visit(node.block, node.variables)
 
     def visit_Func(self, parent, node):
         parent.symbols.put(node.id_.value, node.type_.value, id(parent))
         self.visit(node, node.block)
         self.visit(node, node.params)
+        self.visit(node.block, node.variables)
 
     def visit_FuncProcCall(self, parent, node):
         pass
@@ -1537,8 +1541,8 @@ void insert(char tmp, char* a, int p)
         return path
 
 import re
-from _ast import Return
 import numpy as np
+
 
 class Runner(Visitor):
     def __init__(self, ast):
@@ -1607,11 +1611,13 @@ class Runner(Visitor):
         id_ = self.visit(node, node.id_)
         value = self.visit(node, node.expr)
         if isinstance(value, Symbol):
-            value = value.value
+            id_.value = value.value
         id_.value = value
 
     def visit_If(self, parent, node):
         cond = self.visit(node, node.cond)
+        if isinstance(cond, Symbol):
+            cond = cond.value
         if cond:
             self.init_scope(node.true)
             self.visit(node, node.true)
@@ -1712,6 +1718,8 @@ class Runner(Visitor):
                     format_ += curr
                 elif isinstance(arg, BinOp) and hasattr(arg, 'decimal'):
                     format_ += "{:.2f}".format(curr)
+                elif isinstance(curr, Symbol):
+                    format_ += str(curr.value)
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -1742,7 +1750,6 @@ class Runner(Visitor):
         else:
             impl = self.global_[func]
             self.init_scope(impl.block)
-            self.visit(node, node.args)
             result = self.visit(node, impl.block)
             self.clear_scope(impl.block)
             self.return_ = False
@@ -1752,6 +1759,8 @@ class Runner(Visitor):
         result = None
         scope = id(node)
         self.scope.append(scope)
+        if isinstance(parent, FuncProcCall):
+            self.visit(parent, parent.args)
         for n in node.nodes:
             if self.return_:
                 break
@@ -1759,7 +1768,7 @@ class Runner(Visitor):
                 break
             elif isinstance(n, Continue):
                 continue
-            elif isinstance(n, Return):
+            elif isinstance(n, Exit):
                 self.return_ = True
                 if n.expr is not None:
                     result = self.visit(n, n.expr)
@@ -1775,11 +1784,13 @@ class Runner(Visitor):
         func = parent.id_.value
         impl = self.global_[func]
         for p, a in zip(impl.params.params, node.args):
-            arg = self.visit(impl.block, a)
+            curr_arg = self.visit(impl.block, a)
+            arg = self.global_[curr_arg.id_]
             id_ = self.visit(impl.block, p.id_)
-            id_.value = arg
-            if isinstance(arg, Symbol):
-                id_.value = arg.value
+            id_.value = arg.value
+            # if isinstance(arg, Symbol):
+            #     id_.value = arg.value
+
 
     def visit_Elems(self, parent, node):
         pass
@@ -1790,7 +1801,7 @@ class Runner(Visitor):
     def visit_Continue(self, parent, node):
         pass
 
-    def visit_Return(self, parent, node):
+    def visit_Exit(self, parent, node):
         pass
 
     def visit_Type(self, parent, node):
@@ -1823,6 +1834,10 @@ class Runner(Visitor):
     def visit_BinOp(self, parent, node):
         first = self.visit(node, node.first)
         second = self.visit(node, node.second)
+        if isinstance(first, Symbol):
+            first = first.value
+            if isinstance(second, Symbol):
+                first = second.value
         if node.symbol == '+':
             return self.cast(first) + self.cast(second)
         elif node.symbol == '-':
@@ -1835,7 +1850,7 @@ class Runner(Visitor):
             return self.cast(first) / self.cast(second)
         elif node.symbol == 'mod':
             return self.cast(first) % self.cast(second)
-        elif node.symbol == '==':
+        elif node.symbol == '=':
             return first == second
         elif node.symbol == '!=':
             return first != second
@@ -1862,10 +1877,8 @@ class Runner(Visitor):
         if node.symbol == '-':
             return -first
         elif node.symbol == '!':
-            bool_first = first != 0
+            bool_first = first != False
             return not bool_first
-        elif node.symbol == '&':
-            return backup_first
         else:
             return None
 

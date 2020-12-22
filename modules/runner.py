@@ -3,7 +3,7 @@ from _ast import Return
 import numpy as np
 
 from modules.grapher import Visitor
-from modules.parser import Int, Char, String, Id, Continue, Break, BinOp, FuncProcCall
+from modules.parser import Int, Char, String, Id, Continue, Break, BinOp, FuncProcCall, Exit
 from modules.symbolizer import Symbol
 
 
@@ -100,11 +100,16 @@ class Runner(Visitor):
             cond = self.visit(node, node.cond)
 
     def check_condition(self, first, second, type_):
-        val_first = self.get_symbol(first).value
+        if isinstance(first, Id):
+            val_first = self.get_symbol(first).value
+        else:
+            val_first = first.value
+        val_first = self.cast(val_first)
         if isinstance(second, Id):
             val_second = self.get_symbol(second).value
         else:
             val_second = second.value
+        val_second = self.cast(val_second)
         if type_ == 'increase':
             cond = val_first < val_second
         else:
@@ -231,10 +236,10 @@ class Runner(Visitor):
                 break
             elif isinstance(n, Continue):
                 continue
-            elif isinstance(n, Return):
+            elif isinstance(n, Exit):
                 self.return_ = True
-                if n.expr is not None:
-                    result = self.visit(n, n.expr)
+                if n.return_ is not None:
+                    result = self.visit(n, n.return_)
             else:
                 self.visit(node, n)
         self.scope.pop()
@@ -297,10 +302,6 @@ class Runner(Visitor):
     def visit_BinOp(self, parent, node):
         first = self.visit(node, node.first)
         second = self.visit(node, node.second)
-        if isinstance(first, Symbol):
-            first = first.value
-            if isinstance(second, Symbol):
-                first = second.value
         if node.symbol == '+':
             return self.cast(first) + self.cast(second)
         elif node.symbol == '-':
@@ -314,9 +315,9 @@ class Runner(Visitor):
         elif node.symbol == 'mod':
             return self.cast(first) % self.cast(second)
         elif node.symbol == '=':
-            return first == second
+            return self.cast(first) == self.cast(second)
         elif node.symbol == '!=':
-            return first != second
+            return self.cast(first) != self.cast(second)
         elif node.symbol == '<':
             return self.cast(first) < self.cast(second)
         elif node.symbol == '>':
@@ -334,7 +335,6 @@ class Runner(Visitor):
 
     def visit_UnOp(self, parent, node):
         first = self.visit(node, node.first)
-        backup_first = first
         if isinstance(first, Symbol):
             first = first.value
         if node.symbol == '-':
