@@ -13,6 +13,7 @@ class Runner(Visitor):
         self.global_ = {}
         self.local = {}
         self.scope = []
+        self.loop_control = None
         self.return_ = False
 
     def get_symbol(self, node):
@@ -75,7 +76,14 @@ class Runner(Visitor):
         value = self.visit(node, node.expr)
         if isinstance(value, Symbol):
             id_.value = value.value
-        id_.value = value
+        else:
+            id_.value = value
+
+    def has_break_occured(self):
+        if self.loop_control == 'break':
+            self.loop_control = None
+            return True
+        return False
 
     def visit_If(self, parent, node):
         cond = self.visit(node, node.cond)
@@ -97,6 +105,8 @@ class Runner(Visitor):
             self.init_scope(node.block)
             self.visit(node, node.block)
             self.clear_scope(node.block)
+            if self.has_break_occured():
+                break
             cond = self.visit(node, node.cond)
 
     def check_condition(self, first, second, type_):
@@ -126,11 +136,25 @@ class Runner(Visitor):
             self.init_scope(node.block)
             self.visit(node, node.block)
             self.clear_scope(node.block)
+            if self.has_break_occured():
+                break
             if type_ == 'increment':
                 self.get_symbol(first).value += 1
             else:
                 self.get_symbol(first).value -= 1
             cond = self.check_condition(first, second, type_)
+
+    def visit_Repeat(self, parent, node):
+        cond = self.visit(node, node.cond)
+        while True:
+            self.init_scope(node.block)
+            self.visit(node, node.block)
+            self.clear_scope(node.block)
+            if self.has_break_occured():
+                break
+            if cond:
+                break
+
 
     def visit_Func(self, parent, node):
         id_ = self.get_symbol(node.id_)
@@ -205,12 +229,13 @@ class Runner(Visitor):
                 else:
                     scan = val
                 id_ = self.visit(node.args, args[i])
-                if id_.type_ == 'integer':
-                    id_.value = int(scan)
-                elif id_.type_ == 'real':
-                    id_.value = float(scan)
-                else:
-                    id_.value = scan
+                # if id_.type_ == 'integer':
+                #     id_.value = int(scan)
+                # elif id_.type_ == 'real':
+                #     id_.value = float(scan)
+                # else:
+                #     id_.value = scan
+                id_.value = scan
         elif func == 'ord':
             return self.my_ord(node, args[0])
         elif func == 'chr':
@@ -233,6 +258,7 @@ class Runner(Visitor):
             if self.return_:
                 break
             if isinstance(n, Break):
+                self.loop_control = 'break'
                 break
             elif isinstance(n, Continue):
                 continue
@@ -241,6 +267,8 @@ class Runner(Visitor):
                 if n.return_ is not None:
                     result = self.visit(n, n.return_)
             else:
+                if self.loop_control == 'break':
+                    break
                 self.visit(node, n)
         self.scope.pop()
         return result
@@ -284,18 +312,18 @@ class Runner(Visitor):
     def visit_String(self, parent, node):
         return node.value
 
+    def visit_Boolean(self, parent, node):
+        if node.value == 'false':
+            return False
+        return True
+
     def visit_Id(self, parent, node):
         return self.get_symbol(node)
 
     def cast(self, symb):
         if isinstance(symb, Symbol):
             num = symb.value
-            if symb.type_ == 'integer':
-                return int(num)
-            elif symb.type_ == 'real':
-                return float(num)
-            else:
-                return num
+            return num
         else:
             return symb
 
