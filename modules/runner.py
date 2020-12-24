@@ -3,7 +3,7 @@ from _ast import Return
 import numpy as np
 
 from modules.grapher import Visitor
-from modules.parser import Int, Char, String, Id, Continue, Break, BinOp, FuncProcCall, Exit
+from modules.parser import Int, Char, String, Id, Continue, Break, BinOp, FuncProcCall, Exit, ArrayElem
 from modules.symbolizer import Symbol
 
 
@@ -15,6 +15,8 @@ class Runner(Visitor):
         self.scope = []
         self.loop_control = None
         self.return_ = False
+        self.input = {}
+        self.input_idx = 0
 
     def get_symbol(self, node):
         id_ = node.value
@@ -68,11 +70,28 @@ class Runner(Visitor):
             index = node.index.value
         return (node.id_, index)
 
+    def get_value_at_index(self, tuple_):
+        id_ = tuple_[0].value
+        index = tuple_[1]
+        return self.global_[id_].symbols.symbols[index].value
+
+    def set_value_at_index(self, tuple_, val):
+        id_ = tuple_[0]
+        index = tuple_[1]
+        self.global_[id_.value].symbols.symbols[index].value = val
+
     def visit_Assign(self, parent, node):
         id_ = self.visit(node, node.id_)
         value = self.visit(node, node.expr)
-        if isinstance(value, Symbol):
-            id_.value = value.value
+        # get value
+        if isinstance(value, tuple):
+            value = self.get_value_at_index(value)
+        elif isinstance(value, Symbol):
+            value = value.value
+
+        # assign value
+        if isinstance(id_, tuple):
+            self.set_value_at_index(id_, value)
         else:
             id_.value = value
 
@@ -117,8 +136,8 @@ class Runner(Visitor):
             val_second = second.value
         val_first = self.cast(val_first)
         val_second = self.cast(val_second)
-        if type_ == 'increase':
-            cond = val_first < val_second
+        if type_ == 'increment':
+            cond = val_first <= val_second
         elif type_ == 'decrease':
             cond = val_first >= val_second
         return cond
@@ -209,6 +228,8 @@ class Runner(Visitor):
                     format_ += "{:.2f}".format(curr)
                 elif isinstance(curr, Symbol):
                     format_ += str(curr.value)
+                elif isinstance(curr, tuple):
+                    format_ += self.get_value_at_index(curr)
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -225,8 +246,14 @@ class Runner(Visitor):
                     scan = float(val)
                 else:
                     scan = val
-                id_ = self.visit(node.args, args[i])
-                id_.value = scan
+                if isinstance(node.args.args[0], ArrayElem):
+                    id_ = self.visit(node.args, args[0])
+                else:
+                    id_ = self.visit(node.args, args[i])
+                if isinstance(id_, tuple):
+                    self.set_value_at_index(id_, val)
+                else:
+                    id_.value = scan
         elif func == 'ord':
             return self.my_ord(node, args[0])
         elif func == 'chr':
@@ -311,7 +338,9 @@ class Runner(Visitor):
         return self.get_symbol(node)
 
     def cast(self, symb):
-        if isinstance(symb, Symbol):
+        if isinstance(symb, tuple):
+            return self.get_value_at_index(symb)
+        elif isinstance(symb, Symbol):
             num = symb.value
             return num
         else:

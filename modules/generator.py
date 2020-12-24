@@ -276,14 +276,14 @@ void insert(char tmp, char* a, int p)
         self.visit(node, node.start)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        if node.type_.value == "increase":
+        if node.type_.value == "increment":
             self.append(" <= ")
         elif node.type_.value == "decrement":
             self.append(" >= ")
         self.visit(node, node.end)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        if node.type_.value == "increase":
+        if node.type_.value == "increment":
             self.append("++")
         elif node.type_.value == "decrement":
             self.append("--")

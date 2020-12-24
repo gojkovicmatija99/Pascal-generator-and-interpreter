@@ -340,7 +340,7 @@ class Parser:
         start = self.expression()
         if self.curr.class_ == Class.TO:
             self.eat(Class.TO)
-            type_ = String("increase")
+            type_ = String("increment")
         elif self.curr.class_ == Class.DOWNTO:
             self.eat(Class.DOWNTO)
             type_ = String("decrement")
