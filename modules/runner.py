@@ -15,8 +15,7 @@ class Runner(Visitor):
         self.scope = []
         self.loop_control = None
         self.return_ = False
-        self.input = {}
-        self.input_idx = 0
+        self.input_buffer = []
 
     def get_symbol(self, node):
         id_ = node.value
@@ -38,6 +37,16 @@ class Runner(Visitor):
     def clear_scope(self, node):
         scope = id(node)
         self.local[scope].pop()
+
+    def add_to_buffer(self):
+        one_line = input().split()
+        for val  in one_line:
+            self.input_buffer.append(val)
+
+    def get_from_buffer(self):
+        if len(self.input_buffer) == 0:
+            self.add_to_buffer()
+        return self.input_buffer.pop(0)
 
     def visit_Program(self, parent, node):
         for s in node.symbols:
@@ -142,7 +151,7 @@ class Runner(Visitor):
         val_second = self.cast(val_second)
         if type_ == 'increment':
             cond = val_first <= val_second
-        elif type_ == 'decrease':
+        elif type_ == 'decrement':
             cond = val_first >= val_second
         return cond
 
@@ -160,7 +169,7 @@ class Runner(Visitor):
                 break
             if type_ == 'increment':
                 self.get_symbol(first).value += 1
-            elif type_ == 'decrease':
+            elif type_ == 'decrement':
                 self.get_symbol(first).value -= 1
             cond = self.check_condition(first, second, type_)
 
@@ -241,23 +250,20 @@ class Runner(Visitor):
             else:
                 print(format_, end='')
         elif func == 'read' or func == 'readln':
-            scan = input()
-            vals = scan.split()
-            for i, val in enumerate(vals):
-                if self.is_int(val):
-                    scan = int(val)
-                elif self.is_float(val):
-                    scan = float(val)
-                else:
-                    scan = val
+            for i in range(len(args)):
+                input_ = self.get_from_buffer()
+                if self.is_int(input_):
+                    input_ = int(input_)
+                elif self.is_float(input_):
+                    input_ = float(input_)
                 if isinstance(node.args.args[0], ArrayElem):
                     id_ = self.visit(node.args, args[0])
                 else:
                     id_ = self.visit(node.args, args[i])
                 if isinstance(id_, tuple):
-                    self.set_value_at_index(id_, scan)
+                    self.set_value_at_index(id_, input_)
                 else:
-                    id_.value = scan
+                    id_.value = input_
         elif func == 'ord':
             return self.my_ord(node, args[0])
         elif func == 'chr':

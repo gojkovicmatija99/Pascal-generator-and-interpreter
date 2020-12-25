@@ -1,3 +1,4 @@
+import re
 from enum import Enum, auto
 
 
@@ -1112,8 +1113,6 @@ class Symbolizer(Visitor):
     def symbolize(self):
         self.visit(None, self.ast)
 
-import re
-
 
 class Generator(Visitor):
     def __init__(self, ast):
@@ -1151,37 +1150,6 @@ class Generator(Visitor):
 
     def libs(self):
         self.append("#include<stdio.h>")
-        self.append('''
-void insert(char tmp, char* a, int p)
-{
-    int i=0;
-	int t=0;
-	int x,g,s,o;
-	char c[100], b[100];
-	b[0]=tmp;
-	b[1]='\0';
-	int	r = strlen(a);
-	int n = strlen(b);
-   	while(i <= r)
-	{
-		c[i]=a[i];
-		i++;
-	}
-	s = n+r;
-	o = p+n;
-
-	for(i=p;i<s;i++)
-	{
-		x = c[i];
-		if(t<n)
-		{
-			a[i] = b[t];
-			t=t+1;
-		}
-		a[o]=x;
-		o=o+1;
-	}
-}''')
         self.newline()
         self.indent()
 
@@ -1297,6 +1265,15 @@ void insert(char tmp, char* a, int p)
         elif func == 'inc':
             self.visit(node, node.args)
             self.append("++")
+        elif func == 'insert':
+            src = node.args[0].id_.value
+            dest = node.args[1].id_.value
+            place = node.args[2].id_.value
+            self.append(dest)
+            self.append('[')
+            self.append(place)
+            self.append(' - 1] = ')
+            self.append(src)
         else:
             self.append(func)
             self.append('(')
@@ -1540,10 +1517,10 @@ void insert(char tmp, char* a, int p)
             source.write(self.py)
         return path
 
-
 import re
 from _ast import Return
 import numpy as np
+
 
 class Runner(Visitor):
     def __init__(self, ast):
@@ -1553,8 +1530,7 @@ class Runner(Visitor):
         self.scope = []
         self.loop_control = None
         self.return_ = False
-        self.input = {}
-        self.input_idx = 0
+        self.input_buffer = []
 
     def get_symbol(self, node):
         id_ = node.value
@@ -1576,6 +1552,16 @@ class Runner(Visitor):
     def clear_scope(self, node):
         scope = id(node)
         self.local[scope].pop()
+
+    def add_to_buffer(self):
+        one_line = input().split()
+        for val  in one_line:
+            self.input_buffer.append(val)
+
+    def get_from_buffer(self):
+        if len(self.input_buffer) == 0:
+            self.add_to_buffer()
+        return self.input_buffer.pop(0)
 
     def visit_Program(self, parent, node):
         for s in node.symbols:
@@ -1637,6 +1623,8 @@ class Runner(Visitor):
         if self.loop_control == 'break':
             self.loop_control = None
             return True
+        elif self.loop_control == 'continue':
+            self.loop_control = None
         return False
 
     def visit_If(self, parent, node):
@@ -1769,7 +1757,7 @@ class Runner(Visitor):
                 elif isinstance(curr, Symbol):
                     format_ += str(curr.value)
                 elif isinstance(curr, tuple):
-                    format_ += self.get_value_at_index(curr)
+                    format_ += str(self.get_value_at_index(curr))
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -1777,23 +1765,20 @@ class Runner(Visitor):
             else:
                 print(format_, end='')
         elif func == 'read' or func == 'readln':
-            scan = input()
-            vals = scan.split()
-            for i, val in enumerate(vals):
-                if self.is_int(val):
-                    scan = int(val)
-                elif self.is_float(val):
-                    scan = float(val)
-                else:
-                    scan = val
+            for i in range(len(args)):
+                input_ = self.get_from_buffer()
+                if self.is_int(input_):
+                    input_ = int(input_)
+                elif self.is_float(input_):
+                    input_ = float(input_)
                 if isinstance(node.args.args[0], ArrayElem):
                     id_ = self.visit(node.args, args[0])
                 else:
                     id_ = self.visit(node.args, args[i])
                 if isinstance(id_, tuple):
-                    self.set_value_at_index(id_, scan)
+                    self.set_value_at_index(id_, input_)
                 else:
-                    id_.value = scan
+                    id_.value = input_
         elif func == 'ord':
             return self.my_ord(node, args[0])
         elif func == 'chr':
@@ -1819,15 +1804,18 @@ class Runner(Visitor):
             if isinstance(n, Break):
                 self.loop_control = 'break'
                 break
-            elif isinstance(n, Continue):
-                continue
+            if isinstance(n, Continue):
+                self.loop_control = 'continue'
+                break
             elif isinstance(n, Exit):
                 self.return_ = True
                 if n.return_ is not None:
                     result = self.visit(n, n.return_)
             else:
-                # if break occuered, break the curr block
-                if self.loop_control == 'break':
+                # if break or continue occuered,
+                # stop handling next instructions and
+                # go back to for, while or repeat
+                if self.loop_control is not None:
                     break
                 self.visit(node, n)
         self.scope.pop()
