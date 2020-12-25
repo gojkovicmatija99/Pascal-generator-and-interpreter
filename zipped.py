@@ -609,7 +609,7 @@ class Parser:
         start = self.expression()
         if self.curr.class_ == Class.TO:
             self.eat(Class.TO)
-            type_ = String("increase")
+            type_ = String("increment")
         elif self.curr.class_ == Class.DOWNTO:
             self.eat(Class.DOWNTO)
             type_ = String("decrement")
@@ -1386,14 +1386,14 @@ void insert(char tmp, char* a, int p)
         self.visit(node, node.start)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        if node.type_.value == "increase":
+        if node.type_.value == "increment":
             self.append(" <= ")
         elif node.type_.value == "decrement":
             self.append(" >= ")
         self.visit(node, node.end)
         self.append("; ")
         self.visit(node.start, node.start.id_)
-        if node.type_.value == "increase":
+        if node.type_.value == "increment":
             self.append("++")
         elif node.type_.value == "decrement":
             self.append("--")
@@ -1553,6 +1553,8 @@ class Runner(Visitor):
         self.scope = []
         self.loop_control = None
         self.return_ = False
+        self.input = {}
+        self.input_idx = 0
 
     def get_symbol(self, node):
         id_ = node.value
@@ -1595,9 +1597,6 @@ class Runner(Visitor):
         start = self.visit(node, node.start_index)
         end = self.visit(node, node.end_index)
         size = end - start + 1
-        # size, elems = node.size, node.elems
-        # if elems is not None:
-        #     self.visit(node, elems)
         for i in range(size):
             id_.symbols.put(i, id_.type_, None)
             id_.symbols.get(i).value = None
@@ -1609,11 +1608,28 @@ class Runner(Visitor):
             index = node.index.value
         return (node.id_, index)
 
+    def get_value_at_index(self, tuple_):
+        id_ = tuple_[0].value
+        index = tuple_[1]
+        return self.global_[id_].symbols.symbols[index].value
+
+    def set_value_at_index(self, tuple_, val):
+        id_ = tuple_[0]
+        index = tuple_[1]
+        self.global_[id_.value].symbols.symbols[index].value = val
+
     def visit_Assign(self, parent, node):
         id_ = self.visit(node, node.id_)
         value = self.visit(node, node.expr)
-        if isinstance(value, Symbol):
-            id_.value = value.value
+        # get value
+        if isinstance(value, tuple):
+            value = self.get_value_at_index(value)
+        elif isinstance(value, Symbol):
+            value = value.value
+
+        # assign value
+        if isinstance(id_, tuple):
+            self.set_value_at_index(id_, value)
         else:
             id_.value = value
 
@@ -1652,15 +1668,17 @@ class Runner(Visitor):
             val_first = self.get_symbol(first).value
         else:
             val_first = first.value
-        val_first = self.cast(val_first)
         if isinstance(second, Id):
             val_second = self.get_symbol(second).value
+        elif isinstance(second, BinOp):
+            val_second = self.visit(None, second)
         else:
             val_second = second.value
+        val_first = self.cast(val_first)
         val_second = self.cast(val_second)
-        if type_ == 'increase':
-            cond = val_first < val_second
-        else:
+        if type_ == 'increment':
+            cond = val_first <= val_second
+        elif type_ == 'decrement':
             cond = val_first >= val_second
         return cond
 
@@ -1678,7 +1696,7 @@ class Runner(Visitor):
                 break
             if type_ == 'increment':
                 self.get_symbol(first).value += 1
-            else:
+            elif type_ == 'decrement':
                 self.get_symbol(first).value -= 1
             cond = self.check_condition(first, second, type_)
 
@@ -1690,6 +1708,7 @@ class Runner(Visitor):
             self.clear_scope(node.block)
             if self.has_break_occured():
                 break
+            cond = self.visit(node, node.cond)
             if cond:
                 break
 
@@ -1719,7 +1738,7 @@ class Runner(Visitor):
             char = self.visit(node, arg)
         return chr(char)
 
-    def isfloat(self, x):
+    def is_float(self, x):
         try:
             a = float(x)
         except (TypeError, ValueError):
@@ -1727,7 +1746,7 @@ class Runner(Visitor):
         else:
             return True
 
-    def isint(self, x):
+    def is_int(self, x):
         try:
             a = float(x)
             b = int(a)
@@ -1749,6 +1768,8 @@ class Runner(Visitor):
                     format_ += "{:.2f}".format(curr)
                 elif isinstance(curr, Symbol):
                     format_ += str(curr.value)
+                elif isinstance(curr, tuple):
+                    format_ += self.get_value_at_index(curr)
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -1759,20 +1780,20 @@ class Runner(Visitor):
             scan = input()
             vals = scan.split()
             for i, val in enumerate(vals):
-                if self.isint(val):
+                if self.is_int(val):
                     scan = int(val)
-                elif self.isfloat(val):
+                elif self.is_float(val):
                     scan = float(val)
                 else:
                     scan = val
-                id_ = self.visit(node.args, args[i])
-                # if id_.type_ == 'integer':
-                #     id_.value = int(scan)
-                # elif id_.type_ == 'real':
-                #     id_.value = float(scan)
-                # else:
-                #     id_.value = scan
-                id_.value = scan
+                if isinstance(node.args.args[0], ArrayElem):
+                    id_ = self.visit(node.args, args[0])
+                else:
+                    id_ = self.visit(node.args, args[i])
+                if isinstance(id_, tuple):
+                    self.set_value_at_index(id_, scan)
+                else:
+                    id_.value = scan
         elif func == 'ord':
             return self.my_ord(node, args[0])
         elif func == 'chr':
@@ -1789,6 +1810,7 @@ class Runner(Visitor):
         result = None
         scope = id(node)
         self.scope.append(scope)
+        # first visit block to change the scope, then add params to curr scope
         if isinstance(parent, FuncProcCall):
             self.visit(parent, parent.args)
         for n in node.nodes:
@@ -1804,6 +1826,7 @@ class Runner(Visitor):
                 if n.return_ is not None:
                     result = self.visit(n, n.return_)
             else:
+                # if break occuered, break the curr block
                 if self.loop_control == 'break':
                     break
                 self.visit(node, n)
@@ -1821,8 +1844,6 @@ class Runner(Visitor):
             arg = self.global_[curr_arg.id_]
             id_ = self.visit(impl.block, p.id_)
             id_.value = arg.value
-            # if isinstance(arg, Symbol):
-            #     id_.value = arg.value
 
     def visit_Elems(self, parent, node):
         pass
@@ -1857,9 +1878,16 @@ class Runner(Visitor):
         return self.get_symbol(node)
 
     def cast(self, symb):
-        if isinstance(symb, Symbol):
+        if isinstance(symb, tuple):
+            return self.get_value_at_index(symb)
+        elif isinstance(symb, Symbol):
             num = symb.value
             return num
+
+        if self.is_int(symb):
+           return int(symb)
+        elif self.is_float(symb):
+            return float(symb)
         else:
             return symb
 
@@ -1904,13 +1932,14 @@ class Runner(Visitor):
         if node.symbol == '-':
             return -first
         elif node.symbol == '!':
-            bool_first = first != False
+            bool_first = first is not False
             return not bool_first
         else:
             return None
 
     def run(self):
         self.visit(None, self.ast)
+
 
 import argparse
 

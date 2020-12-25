@@ -99,6 +99,8 @@ class Runner(Visitor):
         if self.loop_control == 'break':
             self.loop_control = None
             return True
+        elif self.loop_control == 'continue':
+            self.loop_control = None
         return False
 
     def visit_If(self, parent, node):
@@ -231,7 +233,7 @@ class Runner(Visitor):
                 elif isinstance(curr, Symbol):
                     format_ += str(curr.value)
                 elif isinstance(curr, tuple):
-                    format_ += self.get_value_at_index(curr)
+                    format_ += str(self.get_value_at_index(curr))
                 else:
                     format_ += str(curr)
             if func == 'writeln':
@@ -281,15 +283,18 @@ class Runner(Visitor):
             if isinstance(n, Break):
                 self.loop_control = 'break'
                 break
-            elif isinstance(n, Continue):
-                continue
+            if isinstance(n, Continue):
+                self.loop_control = 'continue'
+                break
             elif isinstance(n, Exit):
                 self.return_ = True
                 if n.return_ is not None:
                     result = self.visit(n, n.return_)
             else:
-                # if break occuered, break the curr block
-                if self.loop_control == 'break':
+                # if break or continue occuered,
+                # stop handling next instructions and
+                # go back to for, while or repeat
+                if self.loop_control is not None:
                     break
                 self.visit(node, n)
         self.scope.pop()
@@ -367,7 +372,6 @@ class Runner(Visitor):
         elif node.symbol == '/':
             return self.cast(first) / self.cast(second)
         elif node.symbol == 'mod':
-            return 1%2
             return self.cast(first) % self.cast(second)
         elif node.symbol == '=':
             return self.cast(first) == self.cast(second)
