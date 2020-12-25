@@ -132,6 +132,8 @@ class Runner(Visitor):
             val_first = first.value
         if isinstance(second, Id):
             val_second = self.get_symbol(second).value
+        elif isinstance(second, BinOp):
+            val_second = self.visit(None, second)
         else:
             val_second = second.value
         val_first = self.cast(val_first)
@@ -251,7 +253,7 @@ class Runner(Visitor):
                 else:
                     id_ = self.visit(node.args, args[i])
                 if isinstance(id_, tuple):
-                    self.set_value_at_index(id_, val)
+                    self.set_value_at_index(id_, scan)
                 else:
                     id_.value = scan
         elif func == 'ord':
@@ -343,6 +345,11 @@ class Runner(Visitor):
         elif isinstance(symb, Symbol):
             num = symb.value
             return num
+
+        if self.is_int(symb):
+           return int(symb)
+        elif self.is_float(symb):
+            return float(symb)
         else:
             return symb
 
@@ -360,6 +367,7 @@ class Runner(Visitor):
         elif node.symbol == '/':
             return self.cast(first) / self.cast(second)
         elif node.symbol == 'mod':
+            return 1%2
             return self.cast(first) % self.cast(second)
         elif node.symbol == '=':
             return self.cast(first) == self.cast(second)
