@@ -157,14 +157,17 @@ class Generator(Visitor):
             self.visit(node, node.args)
             self.append("++")
         elif func == 'insert':
-            src = node.args[0].id_.value
-            dest = node.args[1].id_.value
-            place = node.args[2].id_.value
+            dest = node.args.args[1].value
+            place = node.args.args[2].value
             self.append(dest)
             self.append('[')
             self.append(place)
             self.append(' - 1] = ')
-            self.append(src)
+            if isinstance(node.args.args[0], FuncProcCall):
+                src = self.visit(node.args, node.args.args[0])
+            else:
+                src = node.args.args[0].value
+                self.append(src)
         else:
             self.append(func)
             self.append('(')
