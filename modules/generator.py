@@ -359,7 +359,7 @@ class Generator(Visitor):
         self.append(" ")
         self.visit(node, node.id_)
         self.append("[")
-        maxElems = node.end_index.value - node.start_index.value + 1
+        maxElems = node.end_index.value + 1
         self.append(str(maxElems))
         self.append("]")
         if node.elems is not None:
