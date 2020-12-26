@@ -8,7 +8,7 @@ from modules.symbolizer import Symbolizer
 DEBUG = True  # OBAVEZNO: Postaviti na False pre slanja projekta
 
 if DEBUG:
-    test_id = '15'  # Redni broj test primera [01-15]
+    test_id = '14'  # Redni broj test primera [01-15]
     path_root = './'
     args = {}
     args['src'] = f'{path_root}{test_id}/src.pas'  # Izvorna PAS datoteka

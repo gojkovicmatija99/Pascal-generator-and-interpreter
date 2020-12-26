@@ -74,6 +74,8 @@ class Runner(Visitor):
     def visit_ArrayElem(self, parent, node):
         if isinstance(node.index, Id):
             index = self.get_symbol(node.index).value
+        elif isinstance(node.index, BinOp):
+            index = self.visit(node, node.index)
         else:
             index = node.index.value
         return (node.id_, index)

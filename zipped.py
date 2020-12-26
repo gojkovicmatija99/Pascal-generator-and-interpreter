@@ -1518,7 +1518,6 @@ class Generator(Visitor):
         return path
 
 import re
-from _ast import Return
 import numpy as np
 
 
@@ -1580,9 +1579,8 @@ class Runner(Visitor):
     def visit_ArrayDecl(self, parent, node):
         id_ = self.get_symbol(node.id_)
         id_.symbols = node.symbols
-        start = self.visit(node, node.start_index)
         end = self.visit(node, node.end_index)
-        size = end - start + 1
+        size = end + 1
         for i in range(size):
             id_.symbols.put(i, id_.type_, None)
             id_.symbols.get(i).value = None
@@ -1590,6 +1588,8 @@ class Runner(Visitor):
     def visit_ArrayElem(self, parent, node):
         if isinstance(node.index, Id):
             index = self.get_symbol(node.index).value
+        elif isinstance(node.index, BinOp):
+            index = self.visit(node, node.index)
         else:
             index = node.index.value
         return (node.id_, index)
@@ -1927,6 +1927,7 @@ class Runner(Visitor):
 
     def run(self):
         self.visit(None, self.ast)
+
 
 
 import argparse

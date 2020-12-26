@@ -1,9 +1,9 @@
 #include<stdio.h>
 int main()
 {
-	int a[100];
-	int b[100];
-	int c[100];
+	int a[101];
+	int b[101];
+	int c[101];
 	int n;
 	int ai;
 	int bi;
