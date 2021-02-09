@@ -1,5 +1,11 @@
 # Pascal-generator-and-interpreter
-Interpreter that runs Pascal code and generates C code
+Compiler writen in Python that uses Pascal code, generates C code and interprets it. It is divided into few modules:
+- Lexer
+- Parser
+- Grapher
+- Symbolizer
+- Generator
+- Interpreter
 
 ## My Pascal grammer
 
