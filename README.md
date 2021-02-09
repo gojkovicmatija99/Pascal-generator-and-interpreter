@@ -135,6 +135,16 @@ Compiler writen in Python that uses Pascal code, generates C code and interprets
         return 0;
     }
     
+## Interpreter
+
+     5
+     34
+     12
+     54
+     90
+     232
+     12 34 54 90 232 
+    
 ## Future additions
 
 - Support for recursion calls and recursive stacks
