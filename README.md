@@ -31,7 +31,7 @@ Compiler writen in Python that uses Pascal code, generates C code and interprets
      repeat_statement  =>               'repeat'  block  'until'  logic_expression  ';'
 
      logic_expression =>                logic_term  ( ( 'or' )  logic_term )*
-     logic_term =>                      compare ( ( 'and' | 'xor' ) compare ) *
+     logic_term =>                      compare ( ( 'and' | 'xor' ) compare )*
      compare  =>                        expression  ( '==' | '!=' | '<' | '>' | '<=' | '>=' | '<>' )  expression
 
      expression  =>                     term  ( ( '+' | '-' )  term  )*
